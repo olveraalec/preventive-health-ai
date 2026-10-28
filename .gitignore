@@ -24,3 +24,7 @@ results/
 # Frontend dependencies and builds
 frontend/node_modules/
 frontend/dist/
+
+# Trusted research binaries and local provenance/smoke-test manifests
+artifacts/models/*.joblib
+artifacts/models/*.manifest.json

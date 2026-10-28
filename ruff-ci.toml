@@ -1,0 +1,21 @@
+# Explicit clean baseline; legacy research files remain outside this CI scope.
+# Extend this list alongside new production modules and their regression tests.
+target-version = "py312"
+include = [
+    "src/healthcare_ai_lab/api/main.py",
+    "src/healthcare_ai_lab/models/artifact.py",
+    "src/healthcare_ai_lab/models/sepsis_inference.py",
+    "src/healthcare_ai_lab/preprocessing/sepsis.py",
+    "src/healthcare_ai_lab/trajectories/**/*.py",
+    "src/healthcare_ai_lab/experiments/verify_sepsis_bundle.py",
+    "tests/test_artifact.py",
+    "tests/test_raw_trajectories.py",
+    "tests/test_sepsis_features.py",
+    "tests/test_trajectories.py",
+    "tests/test_database_integration.py",
+]
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]
+# Preserve the existing API module's staged imports; no import-layout refactor.
+ignore = ["E402"]

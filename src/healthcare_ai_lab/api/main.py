@@ -5,10 +5,9 @@ No clinical inference is exposed yet.
 """
 
 from fastapi import FastAPI
+
 from healthcare_ai_lab.database.repository import (
     get_episode_memories,
-)
-from healthcare_ai_lab.database.repository import (
     save_agent_run_with_selections,
 )
 
@@ -121,8 +120,8 @@ from uuid import UUID
 import psycopg
 
 from healthcare_ai_lab.database.repository import (
-    save_agent_run,
     get_agent_run,
+    save_agent_run,
 )
 
 
@@ -278,6 +277,16 @@ from healthcare_ai_lab.models.sepsis_inference import (
     load_bundle,
     predict_engineered_row,
 )
+from healthcare_ai_lab.trajectories.contracts import (
+    TrajectoryRequest,
+    TrajectoryResponse,
+)
+from healthcare_ai_lab.trajectories.raw import (
+    RawTrajectoryRequest,
+    RawTrajectoryResponse,
+    predict_raw_trajectory,
+)
+from healthcare_ai_lab.trajectories.service import predict_trajectory
 
 
 class EngineeredPredictionRequest(BaseModel):
@@ -304,7 +313,7 @@ def get_research_bundle():
 def predict_sepsis_engineered(request: EngineeredPredictionRequest):
     try:
         bundle = get_research_bundle()
-    except (FileNotFoundError, OSError):
+    except (FileNotFoundError, OSError, ValueError):
         raise HTTPException(
             status_code=503, detail="Research model bundle not installed"
         ) from None
@@ -318,3 +327,33 @@ def predict_sepsis_engineered(request: EngineeredPredictionRequest):
         )
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/v1/research/sepsis/trajectory", response_model=TrajectoryResponse)
+def predict_sepsis_trajectory(request: TrajectoryRequest):
+    """Score one declared engineered research history, with request-local state."""
+    try:
+        bundle = get_research_bundle()
+    except (FileNotFoundError, OSError, ValueError):
+        raise HTTPException(status_code=503, detail="Research artifact unavailable") from None
+    try:
+        return predict_trajectory(bundle, request)
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(status_code=422, detail="Incompatible trajectory or artifact") from None
+    except Exception:  # noqa: BLE001 -- model plugins can raise arbitrary inference errors
+        raise HTTPException(status_code=503, detail="Static research inference unavailable") from None
+
+
+@app.post("/api/v1/research/sepsis/trajectory/raw-hourly", response_model=RawTrajectoryResponse)
+def predict_sepsis_raw_trajectory(request: RawTrajectoryRequest):
+    """Build versioned causal features and score one research episode."""
+    try:
+        bundle = get_research_bundle()
+    except (FileNotFoundError, OSError, ValueError):
+        raise HTTPException(status_code=503, detail="Research artifact unavailable") from None
+    try:
+        return predict_raw_trajectory(bundle, request)
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(status_code=422, detail="Incompatible raw trajectory or artifact") from None
+    except Exception:  # noqa: BLE001 -- do not expose model plugin errors
+        raise HTTPException(status_code=503, detail="Static research inference unavailable") from None
