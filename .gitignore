@@ -1,0 +1,26 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.DS_Store
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# Patient datasets and generated outputs
+data/raw/
+data/processed/
+results/
+
+# Frontend dependencies and builds
+frontend/node_modules/
+frontend/dist/
