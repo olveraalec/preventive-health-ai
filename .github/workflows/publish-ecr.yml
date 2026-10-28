@@ -1,0 +1,144 @@
+name: Publish research image to ECR
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-ecr-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ECR_REPOSITORY: preventive-health-ai
+  RUN_DB_TESTS: "0"
+  PYTHON_DOTENV_DISABLED: "1"
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.26"
+          python-version: "3.12"
+          enable-cache: false
+      - name: Install locked dependencies
+        run: uv sync --locked --group dev
+      - name: Run non-database suite
+        run: uv run --no-sync pytest -q -ra
+      - name: Check existing Ruff baseline and publishing tests
+        run: |
+          uv run --no-sync ruff check --config ruff-ci.toml .
+          uv run --no-sync ruff check tests/test_publish_workflow.py
+      - name: Report branch gate
+        if: always()
+        env:
+          SELECTED_REF: ${{ github.ref }}
+        run: |
+          if [[ "$SELECTED_REF" != refs/heads/feature/codex-integration ]]; then
+            echo 'Publishing blocked: select feature/codex-integration after review and merge.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Report validation blocker
+        if: failure()
+        run: |
+          echo 'Publishing blocked: dependency installation, tests or lint failed. Review validation logs; the AWS publishing job will not run.' >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: validation
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/codex-integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate publishing configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$AWS_REGION" == us-west-2 ]] || { echo '::error::Set AWS_REGION to us-west-2'; exit 1; }
+          [[ "$AWS_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/.+ ]] || { echo '::error::Set AWS_ROLE_ARN to the approved OIDC role ARN'; exit 1; }
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || exit 1
+      - uses: docker/setup-buildx-action@v3
+      - name: Build amd64 image without publishing
+        run: |
+          docker buildx build --platform linux/amd64 --load \
+            --label "org.opencontainers.image.revision=$IMAGE_TAG" \
+            --tag "research-image:$IMAGE_TAG" .
+      - name: Verify architecture, dependencies, non-root user and liveness
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="research-image:$IMAGE_TAG"
+          [[ "$(docker image inspect "$image" --format '{{.Os}}/{{.Architecture}}')" == linux/amd64 ]]
+          [[ "$(docker image inspect "$image" --format '{{.Config.User}}')" == appuser ]]
+          docker run --rm --network none --entrypoint python "$image" \
+            -c 'import fastapi, uvicorn, psycopg, numpy, sklearn; from healthcare_ai_lab.api.main import app; assert app is not None'
+          container=$(docker run --detach --network none "$image")
+          trap 'docker rm --force "$container" >/dev/null' EXIT
+          for attempt in {1..30}; do
+            if docker exec "$container" python -c 'import json, urllib.request; response = json.load(urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2)); assert response["status"] == "ok"' 2>/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo '::error::Container liveness smoke check failed; publication blocked'
+          exit 1
+      - name: Authenticate to AWS using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: github-ecr-${{ github.run_id }}
+          unset-current-credentials: true
+      - name: Require existing repository with immutable tags
+        id: repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" > "$RUNNER_TEMP/ecr-repository.json"
+          uri=$(jq -r '.repositories[0].repositoryUri' "$RUNNER_TEMP/ecr-repository.json")
+          mutability=$(jq -r '.repositories[0].imageTagMutability' "$RUNNER_TEMP/ecr-repository.json")
+          [[ "$mutability" == IMMUTABLE ]] || { echo '::error::Repository must already enforce IMMUTABLE tags; no AWS settings will be changed'; exit 1; }
+          echo "uri=$uri" >> "$GITHUB_OUTPUT"
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Push the tested image with full commit SHA
+        id: push
+        env:
+          REPOSITORY_URI: ${{ steps.repository.outputs.uri }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="$REPOSITORY_URI:$IMAGE_TAG"
+          docker tag "research-image:$IMAGE_TAG" "$image"
+          docker push "$image"
+          digest=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+            --image-ids "imageTag=$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo '::error::No valid pushed digest returned'; exit 1; }
+          {
+            echo '## Published research application image'
+            echo "Commit: $IMAGE_TAG"
+            echo "Tag: $image"
+            echo "Digest: $digest"
+            echo "Pull by digest: $REPOSITORY_URI@$digest"
+            echo 'Platform: linux/amd64. Model artifacts and patient datasets are excluded.'
+            echo 'Publication does not deploy the application or establish model readiness.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report failure blockers
+        if: failure()
+        run: |
+          echo 'Publication failed: inspect the failed gate (variables, dependency install/build, amd64/liveness, OIDC trust, existing ECR repository/permissions, immutable-tag collision, or digest lookup). No infrastructure or IAM changes are attempted. A failed digest lookup may occur after a successful push; check ECR before retrying.' >> "$GITHUB_STEP_SUMMARY"

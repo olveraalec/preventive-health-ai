@@ -1,0 +1,16 @@
+# Deny by default: only packaging inputs and Python source enter the context.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+!src/**/
+!src/**/*.py
+# Exclude generated/cache directories even when they contain Python files.
+**/__pycache__/
+**/.venv/
+**/data/
+**/artifacts/
+**/models/artifacts/
