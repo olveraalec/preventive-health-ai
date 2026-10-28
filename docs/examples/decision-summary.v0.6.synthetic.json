@@ -1,0 +1,127 @@
+{
+  "schema_version": "decision-summary.v0.6",
+  "episode_id": "synthetic-summary",
+  "current": {
+    "icu_hour": 4.0,
+    "static_probability": 0.2,
+    "temporal_probability": 0.5,
+    "final_probability": 0.25017060660274965,
+    "temporal_weight": 0.16723535534249878,
+    "static_weight": 0.8327646446575012,
+    "status": "bounded_anticipatory",
+    "reason": "no_verified_feedback",
+    "static_contribution": 0.16655292893150025,
+    "temporal_contribution": 0.08361767767124939
+  },
+  "previous": {
+    "icu_hour": 1.0,
+    "static_probability": 0.1,
+    "temporal_probability": 0.3,
+    "final_probability": 0.11344707106849976,
+    "temporal_weight": 0.06723535534249878,
+    "static_weight": 0.9327646446575012,
+    "status": "bounded_anticipatory",
+    "reason": "no_verified_feedback",
+    "static_contribution": 0.09327646446575012,
+    "temporal_contribution": 0.020170606602749632
+  },
+  "elapsed_hours": 3.0,
+  "change": {
+    "status": "available",
+    "reason": null,
+    "interval": "since_previous_observed_hour",
+    "probability_delta": 0.13672353553424987,
+    "static_delta": 0.1,
+    "disagreement_change_at_previous_allocation": 0.006723535534249878,
+    "reallocation_at_current_disagreement": 0.03,
+    "reconstruction_residual": 0.0,
+    "interpretation": "arithmetic_attribution_not_medical_causality"
+  },
+  "diagnostics": {
+    "signed_model_disagreement": 0.3,
+    "absolute_model_disagreement": 0.3,
+    "final_predictive_entropy_nats": 0.5625224975232487,
+    "entropy_interpretation": "predictive_distribution_not_reliability"
+  },
+  "data_quality": {
+    "status": "unavailable",
+    "reason": "raw_measurements_not_supplied",
+    "scope": "sepsis_vitals",
+    "source_availability_verified": false,
+    "measurements": {},
+    "missing_count": null,
+    "missing_fraction": null,
+    "engineered_feature_count": 2,
+    "engineered_missing_count": 0
+  },
+  "controller": {
+    "policy_id": "bounded_anticipatory_research",
+    "allocation_basis": "learned_gain_with_heuristic_exposure_and_bounds",
+    "empirically_validated": false,
+    "exposure": 0.25,
+    "exposure_empirically_calibrated": false,
+    "anticipatory_proposal": 0.8807970779778823,
+    "estimated_gain": 0.02,
+    "gain_interpretation": "training_gain_surrogate_not_verified_live_benefit",
+    "fallback_active": false,
+    "fallback_reason": null,
+    "emergency_overrides_step_limit": false,
+    "configured_constraints": {
+      "fallback_weight": 0.0,
+      "max_deviation": 0.25,
+      "max_step": 0.1
+    },
+    "constraint_trace": "binding_constraints_not_recorded",
+    "reactive": {
+      "status": "unavailable",
+      "value": null,
+      "reason": "no_verified_outcome_feedback"
+    },
+    "covariance": {
+      "status": "unavailable",
+      "value": null,
+      "reason": "not_integrated_in_this_policy"
+    }
+  },
+  "provenance": {
+    "dataset": "sepsis2019",
+    "target": "shifted_challenge_label",
+    "model": {
+      "artifact_id": "synthetic",
+      "model_version": "1"
+    },
+    "artifact_sha256": null,
+    "artifact_status": "manifest_unavailable",
+    "features": {
+      "feature_schema": "synthetic",
+      "preprocessing_version": "1",
+      "pipeline_id": "synthetic",
+      "declaration": "current_and_past_only"
+    },
+    "feature_status": "declared_compatible_not_independently_verified"
+  },
+  "evaluation": {
+    "status": "unavailable",
+    "value": null,
+    "reason": "no_recorded_evaluation_bound_to_this_model",
+    "recorded_summary_path": "/api/v1/research/evaluation-summary"
+  },
+  "next_computational_step": "await_next_valid_observation_then_update_causal_features_and_reevaluate",
+  "next_hour_forecast": {
+    "status": "unavailable",
+    "value": null,
+    "reason": "no_validated_next_hour_forecaster"
+  },
+  "learned_hybrid": {
+    "status": "unavailable",
+    "value": null,
+    "reason": "not_integrated_or_validated"
+  },
+  "workflow_recommendation": {
+    "status": "unavailable",
+    "value": null,
+    "reason": "no_supported_recommendation_layer"
+  },
+  "research_only": true,
+  "clinical_use": false
+}

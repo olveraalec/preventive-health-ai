@@ -258,6 +258,12 @@ def test_activated_raw_api_uses_real_sidecar_loader(bundle, tmp_path, monkeypatc
         )
         assert response.status_code == 200
         assert response.json()["model"] == manifest.model.model_dump()
+        summary = response.json()["decision_summaries"][0]
+        assert summary["provenance"]["artifact_sha256"] == sha256_file(path)
+        assert summary["provenance"]["artifact_status"] == "manifest_validated"
+        assert summary["provenance"]["feature_status"] == (
+            "runtime_generated_source_availability_unverified"
+        )
         assert response.json()["predictions"][0]["status"] == "bounded_anticipatory"
     finally:
         get_research_bundle.cache_clear()

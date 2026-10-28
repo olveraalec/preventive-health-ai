@@ -273,6 +273,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from healthcare_ai_lab.evaluation.summary import (
+    EvaluationSummary,
+    recorded_evaluation_summary,
+)
 from healthcare_ai_lab.models.sepsis_inference import (
     load_bundle,
     predict_engineered_row,
@@ -342,6 +346,12 @@ def predict_sepsis_trajectory(request: TrajectoryRequest):
         raise HTTPException(status_code=422, detail="Incompatible trajectory or artifact") from None
     except Exception:  # noqa: BLE001 -- model plugins can raise arbitrary inference errors
         raise HTTPException(status_code=503, detail="Static research inference unavailable") from None
+
+
+@app.get("/api/v1/research/evaluation-summary", response_model=EvaluationSummary)
+def get_recorded_evaluation_summary():
+    """Already recorded aggregate evidence; never score labels in live inference."""
+    return recorded_evaluation_summary()
 
 
 @app.post("/api/v1/research/sepsis/trajectory/raw-hourly", response_model=RawTrajectoryResponse)

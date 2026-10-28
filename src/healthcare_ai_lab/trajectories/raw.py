@@ -12,6 +12,7 @@ from healthcare_ai_lab.preprocessing.sepsis import (
     PREPROCESSING_VERSION,
     RAW_REQUIRED,
     UNUSED_CHALLENGE_COLUMNS,
+    VITALS,
     build_sepsis_features,
     feature_sources,
 )
@@ -20,6 +21,7 @@ from healthcare_ai_lab.trajectories.contracts import (
     FeatureProvenance,
     Finite,
     Identifier,
+    MeasurementAvailability,
     ModelMetadata,
     TrajectoryRequest,
     TrajectoryResponse,
@@ -132,6 +134,27 @@ def predict_raw_trajectory(
         ],
     )
     result = predict_trajectory(bundle, history)
+    # Source ages use elapsed ICU hours, never row counts or future observations.
+    last_seen: dict[str, int] = {}
+    for row, summary in zip(request.observations, result.decision_summaries, strict=True):
+        summary.provenance = summary.provenance.model_copy(update={
+            "feature_status": "runtime_generated_source_availability_unverified",
+        })
+        availability = {}
+        for name in VITALS:
+            observed = row.measurements[name] is not None
+            if observed:
+                last_seen[name] = row.icu_hour
+            availability[name] = MeasurementAvailability(
+                observed=observed,
+                age_hours=row.icu_hour - last_seen[name] if name in last_seen else None,
+            )
+        quality = summary.data_quality
+        quality.status = "available"
+        quality.reason = None
+        quality.measurements = availability
+        quality.missing_count = sum(not item.observed for item in availability.values())
+        quality.missing_fraction = quality.missing_count / len(VITALS)
     return RawTrajectoryResponse(
         **result.model_dump(exclude={"provenance_status"}),
         feature_engineering=FeatureEngineeringMetadata(

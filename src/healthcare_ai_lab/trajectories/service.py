@@ -12,6 +12,7 @@ from healthcare_ai_lab.trajectories.contracts import (
     TrajectoryRequest,
     TrajectoryResponse,
 )
+from healthcare_ai_lab.trajectories.summary import decision_summaries
 
 
 class ArtifactCompatibilityError(ValueError):
@@ -89,6 +90,9 @@ def predict_trajectory(bundle: dict, request: TrajectoryRequest) -> TrajectoryRe
         provenance=request.provenance,
         model=request.model,
         predictions=predictions,
+        decision_summaries=decision_summaries(
+            bundle, request, predictions, [result["controller"] for result in results]
+        ),
         configured_parameters={
             "reliability_exposure": 0.25,
             "fallback_weight": 0.0,

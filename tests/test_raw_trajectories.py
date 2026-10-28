@@ -152,3 +152,32 @@ def test_raw_route_and_artifact_gate(raw_bundle, raw_payload):
             "/api/v1/research/sepsis/trajectory/raw-hourly", json=raw_payload
         )
         assert response.status_code == 422
+
+
+def test_raw_decision_freshness_uses_observed_hours_and_prefix(raw_bundle, raw_payload):
+    result = score(raw_bundle, raw_payload)
+    first, second, third = result.decision_summaries
+    assert first.data_quality.measurements["HR"].age_hours is None
+    assert second.data_quality.measurements["HR"].age_hours == 0
+    assert third.data_quality.measurements["HR"].age_hours == 2
+    assert not third.data_quality.measurements["HR"].observed
+    assert third.data_quality.measurements["Resp"].age_hours is None
+    assert third.data_quality.missing_count == 7
+    assert third.data_quality.missing_fraction == 1
+    assert third.elapsed_hours == 2
+    assert not third.data_quality.source_availability_verified
+    prefix = deepcopy(raw_payload)
+    prefix["observations"] = prefix["observations"][:2]
+    assert score(raw_bundle, prefix).decision_summaries == result.decision_summaries[:2]
+    assert score(raw_bundle, raw_payload).decision_summaries == result.decision_summaries
+    restarted = deepcopy(raw_payload)
+    restarted["observations"] = restarted["observations"][-1:]
+    reset_summary = score(raw_bundle, restarted).decision_summaries[0]
+    assert reset_summary.previous is None
+    assert reset_summary.data_quality.measurements["HR"].age_hours is None
+    client = TestClient(app)
+    with patch("healthcare_ai_lab.api.main.get_research_bundle", return_value=raw_bundle):
+        body = client.post("/api/v1/research/sepsis/trajectory/raw-hourly", json=raw_payload).json()
+    assert body["decision_summaries"][2]["data_quality"]["measurements"]["HR"] == {
+        "observed": False, "age_hours": 2.0,
+    }

@@ -7,11 +7,15 @@ include = [
     "src/healthcare_ai_lab/models/sepsis_inference.py",
     "src/healthcare_ai_lab/preprocessing/sepsis.py",
     "src/healthcare_ai_lab/trajectories/**/*.py",
+    "src/healthcare_ai_lab/evaluation/registry.py",
+    "src/healthcare_ai_lab/evaluation/summary.py",
     "src/healthcare_ai_lab/experiments/verify_sepsis_bundle.py",
     "tests/test_artifact.py",
     "tests/test_raw_trajectories.py",
     "tests/test_sepsis_features.py",
     "tests/test_trajectories.py",
+    "tests/test_decision_summary.py",
+    "tests/test_evaluation_summary.py",
     "tests/test_database_integration.py",
 ]
 

@@ -1,7 +1,7 @@
 """Central registry of research evaluation metrics."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
 from scipy.special import ndtr
@@ -17,6 +17,27 @@ class MetricSpec:
 
 
 METRICS: dict[str, MetricSpec] = {}
+
+
+@dataclass(frozen=True)
+class SummaryMetricSpec:
+    """Metadata for recorded binary research results; not a live evaluator."""
+
+    direction: str
+    aggregation: str
+    category: str = "retrospective_label_dependent"
+    distribution: str = "bernoulli"
+    unit: str = "nats"
+    version: str = "1"
+
+
+# Separate namespace: Gaussian METRICS/evaluate() retain their exact behavior.
+SUMMARY_METRICS: dict[str, SummaryMetricSpec] = {
+    "patient_mean_bernoulli_log_loss": SummaryMetricSpec("minimize", "patient_mean"),
+    "patient_cvar90_bernoulli_log_loss": SummaryMetricSpec("minimize", "patient_upper_tail_90"),
+    "positive_patient_mean_bernoulli_log_loss": SummaryMetricSpec("minimize", "retrospective_positive_patient_mean"),
+    "paired_patient_log_loss_gain": SummaryMetricSpec("maximize", "paired_patient_mean_reference_minus_candidate"),
+}
 
 
 def register(name, direction, category, requires_sigma=False):
