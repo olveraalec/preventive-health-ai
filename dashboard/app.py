@@ -68,13 +68,14 @@ def load_data():
     else:
         df, source = simulate(), "SIMULATED patients (data/predictions.csv not found)"
     df = df.sort_values(["patient_id", "hour"]).reset_index(drop=True)
+    has_labels = "SepsisLabel" in df.columns or "onset_hour" in df.columns
     if "onset_hour" not in df.columns:
         if "SepsisLabel" in df.columns:
             first = df[df["SepsisLabel"] == 1].groupby("patient_id")["hour"].min() + 6
             df["onset_hour"] = df["patient_id"].map(first)  # NaN if never septic
         else:
             df["onset_hour"] = np.nan
-    return df, source
+    return df, source, has_labels
 
 
 def patient_table(df: pd.DataFrame, thr: float) -> pd.DataFrame:
@@ -91,10 +92,14 @@ def patient_table(df: pd.DataFrame, thr: float) -> pd.DataFrame:
 
 
 # ----------------------------------------------------------------- UI
-df, source = load_data()
+df, source, has_labels = load_data()
 
-st.title("ICU Sepsis Early-Warning Dashboard")
-st.caption(f"Data: {source}")
+st.title("ICU Retrospective Research Dashboard")
+st.caption(f"Data: {source}. Research use only; not for clinical use.")
+sim = source.startswith("SIMULATED")
+sfx = " (simulated)" if sim else ""
+if sim:
+    st.warning("SIMULATED DATA. These patients have a built-in signal, so the detection and false-alarm rates below say nothing about the model.")
 
 with st.sidebar:
     st.header("Controls")
@@ -104,32 +109,45 @@ with st.sidebar:
 
 table = patient_table(df, thr)
 septic, nonsep = table[table["septic"]], table[~table["septic"]]
+if not has_labels:
+    septic = nonsep = table.iloc[0:0]
 
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Patients", len(table))
-c2.metric("Sepsis cases caught early",
+c2.metric(f"Labeled cases alerted before onset{sfx}",
           f"{septic['caught'].mean():.0%}" if len(septic) else "n/a",
           help="Share of septic patients alerted before (or at) onset.")
-c3.metric("Median lead time",
+c3.metric(f"Median lead time{sfx}",
           f"{septic['lead'].median():.0f} h" if septic["caught"].any() else "n/a",
           help="Hours between the first alert and sepsis onset, for caught cases.")
-c4.metric("False-alarm rate",
+c4.metric(f"False-alarm rate{sfx}",
           f"{nonsep['false_alarm'].mean():.0%}" if len(nonsep) else "n/a",
           help="Share of non-septic patients who triggered at least one alert.")
 
+if sim:
+    st.caption("Simulated metrics are not model performance.")
+elif has_labels:
+    st.caption(f"Computed on {len(table)} loaded retrospective episode(s) at this threshold. Not a performance estimate.")
+if not has_labels:
+    st.info("No retrospective labels in this file, so detection metrics and onset markers are not available.")
 st.divider()
 
 # patient picker: septic patients first
 order = table.sort_values("septic", ascending=False).index.tolist()
 pid = st.selectbox(
     "Select patient", order,
-    format_func=lambda p: f"Patient {p}  " + ("(developed sepsis)" if table.loc[p, "septic"] else "(no sepsis)"),
+    format_func=lambda p: f"Patient {p}  " + (("(developed sepsis)" if table.loc[p, "septic"] else "(no sepsis)") if has_labels else ""),
 )
 g = df[df["patient_id"] == pid]
 row = table.loc[pid]
 
 # headline for this patient
-if row["septic"] and row["caught"]:
+if not has_labels:
+    if pd.notna(row["first_alert"]):
+        st.warning(f"Estimate first reached the threshold at hour {row['first_alert']:.0f}. No retrospective labels loaded.")
+    else:
+        st.info("Estimate stayed below the threshold. No retrospective labels loaded.")
+elif row["septic"] and row["caught"]:
     st.success(f"Alert fired at hour {row['first_alert']:.0f}, **{row['lead']:.0f} hours before** "
                f"sepsis onset (hour {row['onset']:.0f}).")
 elif row["septic"] and pd.notna(row["first_alert"]):
@@ -145,11 +163,15 @@ else:
 # chart: risk on top, vitals underneath, shared time axis
 fig = make_subplots(rows=1 + len(VITALS), cols=1, shared_xaxes=True, vertical_spacing=0.04,
                     row_heights=[0.38] + [0.155] * len(VITALS),
-                    subplot_titles=["Predicted sepsis risk"] + list(VITALS.values()))
-fig.add_trace(go.Scatter(x=g["hour"], y=g["risk"], mode="lines", name="Risk",
+                    subplot_titles=["Estimated probability of shifted challenge label"] + list(VITALS.values()))
+fig.add_trace(go.Scatter(x=g["hour"], y=g["risk"], mode="lines", name="Final",
                          line=dict(color="#d62728", width=3)), row=1, col=1)
 fig.add_hline(y=thr, line_dash="dash", line_color="gray", row=1, col=1,
               annotation_text=f"Threshold {thr:.2f}", annotation_position="top left")
+for col, nm, color in [("static_probability", "Static", "#6b7280"), ("temporal_probability", "Temporal", "#2563eb")]:
+    if col in g.columns:
+        fig.add_trace(go.Scatter(x=g["hour"], y=g[col], mode="lines", name=nm,
+                                 line=dict(color=color, width=2, dash="dot")), row=1, col=1)
 if pd.notna(row["first_alert"]):
     fig.add_trace(go.Scatter(x=[row["first_alert"]], y=[g.loc[g["hour"] == row["first_alert"], "risk"].iloc[0]],
                              mode="markers", name="Alert fired",
@@ -160,8 +182,8 @@ for i, col in enumerate(VITALS, start=2):
                              line=dict(width=2)), row=i, col=1)
 if row["septic"]:
     for i in range(1, 2 + len(VITALS)):
-        fig.add_vline(x=row["onset"], line_dash="dot", line_color="black", row=i, col=1,
-                      annotation_text="Sepsis onset" if i == 1 else None)
+        extra = {"annotation_text": "Sepsis onset"} if i == 1 else {}  # no blank annotations
+        fig.add_vline(x=row["onset"], line_dash="dot", line_color="black", row=i, col=1, **extra)
 fig.update_yaxes(range=[0, 1], row=1, col=1)
 fig.update_xaxes(title_text="Hours since ICU admission", row=1 + len(VITALS), col=1)
 fig.update_layout(height=760, margin=dict(t=40, b=20), legend=dict(orientation="h", y=1.06))
