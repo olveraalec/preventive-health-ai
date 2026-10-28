@@ -262,3 +262,59 @@ def run_agent_from_memory(request: DatabaseAgentRunRequest):
         **record,
         "persisted": True,
     }
+
+
+# ============================================================
+# SEPSIS RESEARCH INFERENCE ENDPOINT
+# Engineered features only — not raw telemetry
+# ============================================================
+
+import os
+from functools import lru_cache
+from pathlib import Path
+from typing import Any
+
+from healthcare_ai_lab.models.sepsis_inference import (
+    load_bundle,
+    predict_engineered_row,
+)
+
+
+class EngineeredPredictionRequest(BaseModel):
+    features: dict[str, Any]
+    previous_weight: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    reliability: float = Field(default=0.25, ge=0, le=1, allow_inf_nan=False)
+
+
+@lru_cache(maxsize=1)
+def get_research_bundle():
+    path = Path(
+        os.environ.get(
+            "SEPSIS_MODEL_BUNDLE", "artifacts/models/prototype_bundle.joblib"
+        )
+    )
+
+    if not path.is_file():
+        raise FileNotFoundError(path)
+
+    return load_bundle(path)
+
+
+@app.post("/api/v1/research/sepsis/predict-engineered")
+def predict_sepsis_engineered(request: EngineeredPredictionRequest):
+    try:
+        bundle = get_research_bundle()
+    except (FileNotFoundError, OSError):
+        raise HTTPException(
+            status_code=503, detail="Research model bundle not installed"
+        ) from None
+
+    try:
+        return predict_engineered_row(
+            bundle,
+            request.features,
+            previous_weight=request.previous_weight,
+            reliability=request.reliability,
+        )
+    except (ValueError, TypeError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
