@@ -1,122 +1,96 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, type ChangeEvent } from "react";
+import { fetchTrajectory } from "./api/client";
+import { ControllerPanel, InfoQuality, Reliability, Timeline } from "./components/Panels";
+import { SYNTHETIC_EPISODE } from "./fixtures/synthetic";
+import type { Episode } from "./types/trajectory";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+type Origin = "fixture" | "backend" | "file";
+const BANNER: Record<Origin, string> = {
+  fixture: "SYNTHETIC FIXTURE. Not patient data and not model output.",
+  backend: "Synthetic inputs sent to the backend. Probabilities come from the loaded research artifact; the inputs are not patient data.",
+  file: "Loaded from a file. Provenance is as declared in the file and is not verified here.",
+};
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function isEpisode(j: unknown): j is Episode {
+  const e = j as Partial<Episode> | null;
+  return !!e && Array.isArray(e.request?.observations) && (e.response?.predictions?.length ?? 0) > 0;
 }
 
-export default App
+export default function App() {
+  const [ep, setEp] = useState<Episode>(SYNTHETIC_EPISODE);
+  const [origin, setOrigin] = useState<Origin>("fixture");
+  const [sel, setSel] = useState(0);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = (e: Episode, o: Origin) => { setEp(e); setOrigin(o); setSel(0); setMsg(null); };
+  const runBackend = async () => {
+    setBusy(true);
+    try {
+      const response = await fetchTrajectory(SYNTHETIC_EPISODE.request);
+      load({ request: SYNTHETIC_EPISODE.request, response }, "backend");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Backend unreachable.");
+    } finally { setBusy(false); }
+  };
+  const onFile = async (ev: ChangeEvent<HTMLInputElement>) => {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    try {
+      const j: unknown = JSON.parse(await file.text());
+      if (!isEpisode(j)) throw new Error('Expected {"request": ..., "response": ...} with at least one prediction.');
+      load(j, "file");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "Could not read file."); }
+  };
+
+  const { response: r, request } = ep;
+  const preds = r.predictions;
+  const p = preds[Math.min(sel, preds.length - 1)];
+  if (!p) return <main><p>No predictions available.</p></main>;
+
+  return (
+    <main>
+      <h1>Time-aware preventive health intelligence</h1>
+      <p className="sub">Retrospective ICU research demonstration. Not for clinical use.</p>
+      <p className={`banner ${origin}`}>{BANNER[origin]}</p>
+
+      <div className="bar">
+        <button onClick={() => load(SYNTHETIC_EPISODE, "fixture")}>Synthetic fixture</button>
+        <button onClick={runBackend} disabled={busy}>{busy ? "Calling backend…" : "Run backend on synthetic inputs"}</button>
+        <label>Load saved JSON <input type="file" accept="application/json" onChange={onFile} /></label>
+      </div>
+      {msg && <p className="warn">{msg}</p>}
+
+      <section className="card">
+        <h2>1. Patient timeline</h2>
+        <p className="big">{p.final_probability.toFixed(4)} <small>final estimated probability of the shifted PhysioNet Challenge label, ICU hour {p.icu_hour}</small></p>
+        <Timeline preds={preds} sel={Math.min(sel, preds.length - 1)} />
+        <p className="legend"><b className="static">Static</b> <b className="temporal">Temporal</b> <b className="final">Final</b> (gaps: no temporal estimate)</p>
+        <input type="range" min={0} max={preds.length - 1} value={sel} onChange={(e) => setSel(Number(e.target.value))} aria-label="ICU hour" />
+        <small>Label overlays are not shown: this response has no retrospective labels, and they are never available to the online policy.</small>
+      </section>
+
+      <div className="two">
+        <section className="card"><h2>2. Information quality</h2><InfoQuality obs={request.observations} hour={p.icu_hour} /></section>
+        <section className="card"><h2>3. Controller allocation (hour {p.icu_hour})</h2><ControllerPanel p={p} /></section>
+      </div>
+
+      <div className="two">
+        <section className="card"><h2>4. Reliability</h2><Reliability preds={preds} /></section>
+        <section className="card">
+          <h2>Evaluation and limitations</h2>
+          <p><strong>Evaluation metrics:</strong> Not available. The trajectory API returns none. Contract request: patient-level metrics (log loss, Brier, calibration, alert burden).</p>
+          <ul>
+            <li>Output type: {r.probability_type}. Not a validated probability of sepsis within six hours.</li>
+            <li>Research only: {String(r.research_only)}. Clinical use: {String(r.clinical_use)}.</li>
+            <li>Provenance: {r.provenance_status}.</li>
+            <li>Controller parameters empirically calibrated: {String(r.parameters_empirically_calibrated)}.</li>
+            <li>Earlier patient-disjoint research did not establish a robust patient-mean log-loss gain for learned adaptive allocation over static.</li>
+            <li>Feature contributions, where shown, describe the model's output and are not causal claims.</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  );
+}
