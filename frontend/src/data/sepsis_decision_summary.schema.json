@@ -1,0 +1,877 @@
+{
+  "$defs": {
+    "Capabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "next_hour_forecast": {
+          "$ref": "#/$defs/UnavailableForecast"
+        },
+        "learned_hybrid": {
+          "$ref": "#/$defs/UnavailableCapability"
+        },
+        "clinician_review": {
+          "$ref": "#/$defs/UnavailableCapability"
+        }
+      },
+      "title": "Capabilities",
+      "type": "object"
+    },
+    "ControllerInterpretation": {
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "const": "bounded_anticipatory",
+          "default": "bounded_anticipatory",
+          "title": "Policy",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "bounded_anticipatory",
+            "static_only_fallback"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "no_verified_feedback",
+            "secondary_inference_failed"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "emergency_fallback": {
+          "title": "Emergency Fallback",
+          "type": "boolean"
+        },
+        "step_limit_overridden": {
+          "title": "Step Limit Overridden",
+          "type": "boolean"
+        },
+        "active_constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Active Constraints",
+          "type": "array"
+        },
+        "evidence": {
+          "const": "learned_gain_configured_bounds_no_validated_superiority",
+          "default": "learned_gain_configured_bounds_no_validated_superiority",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "feedback": {
+          "const": "unavailable",
+          "default": "unavailable",
+          "title": "Feedback",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "reason",
+        "emergency_fallback",
+        "step_limit_overridden",
+        "active_constraints"
+      ],
+      "title": "ControllerInterpretation",
+      "type": "object"
+    },
+    "DecisionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "current": {
+          "$ref": "#/$defs/HourPrediction"
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HourPrediction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "change": {
+          "$ref": "#/$defs/PredictionChange"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/PredictionDiagnostics"
+        },
+        "information_quality": {
+          "$ref": "#/$defs/InformationQuality"
+        },
+        "measurements": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/Measurement"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Measurements"
+        },
+        "controller": {
+          "$ref": "#/$defs/ControllerInterpretation"
+        },
+        "next_step": {
+          "$ref": "#/$defs/NextStep"
+        },
+        "log_odds_contributions": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/LogOddsContribution"
+              },
+              "propertyNames": {
+                "enum": [
+                  "static",
+                  "temporal"
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Log Odds Contributions"
+        }
+      },
+      "required": [
+        "current",
+        "previous",
+        "change",
+        "diagnostics",
+        "information_quality",
+        "measurements",
+        "controller"
+      ],
+      "title": "DecisionRecord",
+      "type": "object"
+    },
+    "FeatureProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "feature_schema": {
+          "minLength": 1,
+          "title": "Feature Schema",
+          "type": "string"
+        },
+        "preprocessing_version": {
+          "minLength": 1,
+          "title": "Preprocessing Version",
+          "type": "string"
+        },
+        "pipeline_id": {
+          "minLength": 1,
+          "title": "Pipeline Id",
+          "type": "string"
+        },
+        "declaration": {
+          "const": "current_and_past_only",
+          "title": "Declaration",
+          "type": "string"
+        }
+      },
+      "required": [
+        "feature_schema",
+        "preprocessing_version",
+        "pipeline_id",
+        "declaration"
+      ],
+      "title": "FeatureProvenance",
+      "type": "object"
+    },
+    "HourPrediction": {
+      "additionalProperties": false,
+      "properties": {
+        "icu_hour": {
+          "title": "Icu Hour",
+          "type": "number"
+        },
+        "static_probability": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Static Probability",
+          "type": "number"
+        },
+        "temporal_probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Temporal Probability"
+        },
+        "final_probability": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Final Probability",
+          "type": "number"
+        },
+        "temporal_weight": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Temporal Weight",
+          "type": "number"
+        },
+        "static_weight": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Static Weight",
+          "type": "number"
+        },
+        "status": {
+          "enum": [
+            "bounded_anticipatory",
+            "static_only_fallback"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "no_verified_feedback",
+            "secondary_inference_failed"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "icu_hour",
+        "static_probability",
+        "temporal_probability",
+        "final_probability",
+        "temporal_weight",
+        "static_weight",
+        "status",
+        "reason"
+      ],
+      "title": "HourPrediction",
+      "type": "object"
+    },
+    "InformationQuality": {
+      "additionalProperties": false,
+      "properties": {
+        "observed_vitals": {
+          "maximum": 7,
+          "minimum": 0,
+          "title": "Observed Vitals",
+          "type": "integer"
+        },
+        "total_vitals": {
+          "const": 7,
+          "default": 7,
+          "title": "Total Vitals",
+          "type": "integer"
+        },
+        "vital_completeness": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Vital Completeness",
+          "type": "number"
+        },
+        "missing_vitals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Vitals",
+          "type": "array"
+        },
+        "availability_status": {
+          "const": "source_units_and_availability_unverified",
+          "default": "source_units_and_availability_unverified",
+          "title": "Availability Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "observed_vitals",
+        "vital_completeness",
+        "missing_vitals"
+      ],
+      "title": "InformationQuality",
+      "type": "object"
+    },
+    "LogOddsContribution": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "intercept": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intercept"
+        },
+        "terms": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Terms"
+        },
+        "total_log_odds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Log Odds"
+        },
+        "reconstructed_probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reconstructed Probability"
+        },
+        "interpretation": {
+          "const": "fitted_preprocessing_log_odds_not_causal",
+          "default": "fitted_preprocessing_log_odds_not_causal",
+          "title": "Interpretation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "LogOddsContribution",
+      "type": "object"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "current_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Current Value"
+        },
+        "missing": {
+          "title": "Missing",
+          "type": "boolean"
+        },
+        "last_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Value"
+        },
+        "age_hours": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Age Hours"
+        },
+        "last_observed_hour": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Observed Hour"
+        },
+        "freshness_status": {
+          "enum": [
+            "observed_hour_proxy",
+            "never_observed",
+            "not_tracked"
+          ],
+          "title": "Freshness Status",
+          "type": "string"
+        },
+        "used_by_feature_builder": {
+          "title": "Used By Feature Builder",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "current_value",
+        "missing",
+        "freshness_status",
+        "used_by_feature_builder"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "ModelMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "minLength": 1,
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "model_version": {
+          "minLength": 1,
+          "title": "Model Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "model_version"
+      ],
+      "title": "ModelMetadata",
+      "type": "object"
+    },
+    "NextStep": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "await_next_valid_observation",
+          "default": "await_next_valid_observation",
+          "title": "Status",
+          "type": "string"
+        },
+        "then": {
+          "default": [
+            "update_causal_temporal_features",
+            "reevaluate_inference_and_allocation"
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "const": "update_causal_temporal_features",
+              "type": "string"
+            },
+            {
+              "const": "reevaluate_inference_and_allocation",
+              "type": "string"
+            }
+          ],
+          "title": "Then",
+          "type": "array"
+        }
+      },
+      "title": "NextStep",
+      "type": "object"
+    },
+    "PredictionChange": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "first_observation",
+            "exact",
+            "partial_temporal_unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "since": {
+          "const": "previous_observed_hour",
+          "default": "previous_observed_hour",
+          "title": "Since",
+          "type": "string"
+        },
+        "elapsed_hours": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Elapsed Hours"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total"
+        },
+        "static_movement": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Static Movement"
+        },
+        "disagreement_movement": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Disagreement Movement"
+        },
+        "controller_reallocation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Controller Reallocation"
+        },
+        "identity_residual": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identity Residual"
+        },
+        "unsupported_terms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unsupported Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "PredictionChange",
+      "type": "object"
+    },
+    "PredictionDiagnostics": {
+      "additionalProperties": false,
+      "properties": {
+        "predictive_entropy_nats": {
+          "minimum": 0,
+          "title": "Predictive Entropy Nats",
+          "type": "number"
+        },
+        "expert_gap": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expert Gap"
+        },
+        "absolute_expert_gap": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Absolute Expert Gap"
+        },
+        "interpretation": {
+          "const": "descriptive_not_calibrated_reliability",
+          "default": "descriptive_not_calibrated_reliability",
+          "title": "Interpretation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "predictive_entropy_nats",
+        "expert_gap",
+        "absolute_expert_gap"
+      ],
+      "title": "PredictionDiagnostics",
+      "type": "object"
+    },
+    "UnavailableCapability": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "unavailable",
+          "default": "unavailable",
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "UnavailableCapability",
+      "type": "object"
+    },
+    "UnavailableForecast": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "unavailable",
+          "default": "unavailable",
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "horizon_hours": {
+          "const": 1,
+          "default": 1,
+          "title": "Horizon Hours",
+          "type": "integer"
+        },
+        "target": {
+          "const": "shifted_challenge_label_at_t_plus_1",
+          "default": "shifted_challenge_label_at_t_plus_1",
+          "title": "Target",
+          "type": "string"
+        },
+        "probability": {
+          "default": null,
+          "title": "Probability",
+          "type": "null"
+        },
+        "model_version": {
+          "default": null,
+          "title": "Model Version",
+          "type": "null"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "UnavailableForecast",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "sepsis-decision-summary.v1",
+      "default": "sepsis-decision-summary.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "dataset": {
+      "const": "sepsis2019",
+      "default": "sepsis2019",
+      "title": "Dataset",
+      "type": "string"
+    },
+    "episode_id": {
+      "minLength": 1,
+      "title": "Episode Id",
+      "type": "string"
+    },
+    "target_semantics": {
+      "const": "shifted_challenge_label",
+      "default": "shifted_challenge_label",
+      "title": "Target Semantics",
+      "type": "string"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelMetadata"
+    },
+    "artifact_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Artifact Sha256"
+    },
+    "artifact_integrity": {
+      "enum": [
+        "checksum_bound_manifest",
+        "declared_only"
+      ],
+      "title": "Artifact Integrity",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/FeatureProvenance"
+    },
+    "feature_transform_sha256": {
+      "title": "Feature Transform Sha256",
+      "type": "string"
+    },
+    "model_feature_hashes": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Model Feature Hashes",
+      "type": "object"
+    },
+    "configured_parameters": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Configured Parameters",
+      "type": "object"
+    },
+    "records": {
+      "items": {
+        "$ref": "#/$defs/DecisionRecord"
+      },
+      "minItems": 1,
+      "title": "Records",
+      "type": "array"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/Capabilities"
+    },
+    "payload_kind": {
+      "default": "api",
+      "enum": [
+        "api",
+        "synthetic_example",
+        "sanitized_retrospective_demo"
+      ],
+      "title": "Payload Kind",
+      "type": "string"
+    },
+    "research_only": {
+      "const": true,
+      "default": true,
+      "title": "Research Only",
+      "type": "boolean"
+    },
+    "clinical_use": {
+      "const": false,
+      "default": false,
+      "title": "Clinical Use",
+      "type": "boolean"
+    },
+    "limitations": {
+      "default": [
+        "Shifted challenge label, not validated clinical onset risk.",
+        "Arithmetic and log-odds attribution are not physiological causality.",
+        "Measurement units and real availability timestamps are source assertions.",
+        "Controller bounds are configured; adaptive superiority is not established.",
+        "No future observations, outcomes or clinical treatment recommendations are used."
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "episode_id",
+    "model",
+    "artifact_sha256",
+    "artifact_integrity",
+    "provenance",
+    "feature_transform_sha256",
+    "model_feature_hashes",
+    "configured_parameters",
+    "records"
+  ],
+  "title": "DecisionSummaryResponse",
+  "type": "object"
+}

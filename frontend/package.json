@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "node --test tests/*.test.ts",
+    "test:browser": "node tests/browser-smoke.mjs",
+    "test:api": "node tests/live-api.mjs",
+    "typecheck": "tsc -b",
     "preview": "vite preview"
   },
   "dependencies": {
