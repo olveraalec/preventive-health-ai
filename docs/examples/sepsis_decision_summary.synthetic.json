@@ -1,0 +1,655 @@
+{
+  "request": {
+    "dataset": "sepsis2019",
+    "episode_id": "synthetic-demo",
+    "model": {
+      "artifact_id": "synthetic-example",
+      "model_version": "synthetic-v1"
+    },
+    "observations": [
+      {
+        "episode_id": "synthetic-demo",
+        "icu_hour": 1,
+        "measurements": {
+          "HR": 80.0,
+          "O2Sat": null,
+          "Temp": null,
+          "SBP": null,
+          "MAP": 75.0,
+          "DBP": null,
+          "Resp": 18.0,
+          "Age": 55.0,
+          "Gender": 1.0,
+          "HospAdmTime": -12.0,
+          "Unit1": 1.0,
+          "Unit2": null
+        }
+      },
+      {
+        "episode_id": "synthetic-demo",
+        "icu_hour": 2,
+        "measurements": {
+          "HR": 90.0,
+          "O2Sat": null,
+          "Temp": null,
+          "SBP": null,
+          "MAP": 75.0,
+          "DBP": null,
+          "Resp": 18.0,
+          "Age": 55.0,
+          "Gender": 1.0,
+          "HospAdmTime": -12.0,
+          "Unit1": 1.0,
+          "Unit2": null
+        }
+      },
+      {
+        "episode_id": "synthetic-demo",
+        "icu_hour": 4,
+        "measurements": {
+          "HR": null,
+          "O2Sat": null,
+          "Temp": null,
+          "SBP": null,
+          "MAP": 75.0,
+          "DBP": null,
+          "Resp": 18.0,
+          "Age": 55.0,
+          "Gender": 1.0,
+          "HospAdmTime": -12.0,
+          "Unit1": 1.0,
+          "Unit2": null
+        }
+      }
+    ]
+  },
+  "response": {
+    "schema_version": "sepsis-decision-summary.v1",
+    "dataset": "sepsis2019",
+    "episode_id": "synthetic-demo",
+    "target_semantics": "shifted_challenge_label",
+    "model": {
+      "artifact_id": "synthetic-example",
+      "model_version": "synthetic-v1"
+    },
+    "artifact_sha256": null,
+    "artifact_integrity": "declared_only",
+    "provenance": {
+      "feature_schema": "sepsis2019.notebook02.temporal.v1",
+      "preprocessing_version": "1",
+      "pipeline_id": "notebook02.cells9-10",
+      "declaration": "current_and_past_only"
+    },
+    "feature_transform_sha256": "46b9a84a5d38188de7c5ddc0423bf7fb65e1e95865c419456411c901044b8527",
+    "model_feature_hashes": {
+      "static": "ade35bdc7910c031f03ec755b744c58923c814703d8f8938d149c522375f5452",
+      "temporal": "ade35bdc7910c031f03ec755b744c58923c814703d8f8938d149c522375f5452"
+    },
+    "configured_parameters": {
+      "reliability_exposure": 0.25,
+      "fallback_weight": 0.0,
+      "max_deviation": 0.25,
+      "max_step": 0.1,
+      "temperature": 0.01
+    },
+    "records": [
+      {
+        "current": {
+          "icu_hour": 1.0,
+          "static_probability": 0.11,
+          "temporal_probability": 0.42000000000000004,
+          "final_probability": 0.14875,
+          "temporal_weight": 0.125,
+          "static_weight": 0.875,
+          "status": "bounded_anticipatory",
+          "reason": "no_verified_feedback"
+        },
+        "previous": null,
+        "change": {
+          "status": "first_observation",
+          "since": "previous_observed_hour",
+          "elapsed_hours": null,
+          "total": null,
+          "static_movement": null,
+          "disagreement_movement": null,
+          "controller_reallocation": null,
+          "identity_residual": null,
+          "unsupported_terms": []
+        },
+        "diagnostics": {
+          "predictive_entropy_nats": 0.4205346949578148,
+          "expert_gap": 0.31000000000000005,
+          "absolute_expert_gap": 0.31000000000000005,
+          "interpretation": "descriptive_not_calibrated_reliability"
+        },
+        "information_quality": {
+          "observed_vitals": 3,
+          "total_vitals": 7,
+          "vital_completeness": 0.42857142857142855,
+          "missing_vitals": [
+            "O2Sat",
+            "Temp",
+            "SBP",
+            "DBP"
+          ],
+          "availability_status": "source_units_and_availability_unverified"
+        },
+        "measurements": {
+          "HR": {
+            "current_value": 80.0,
+            "missing": false,
+            "last_value": 80.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 1.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "O2Sat": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "Temp": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "SBP": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "MAP": {
+            "current_value": 75.0,
+            "missing": false,
+            "last_value": 75.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 1.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "DBP": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "Resp": {
+            "current_value": 18.0,
+            "missing": false,
+            "last_value": 18.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 1.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "Age": {
+            "current_value": 55.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Gender": {
+            "current_value": 1.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "HospAdmTime": {
+            "current_value": -12.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Unit1": {
+            "current_value": 1.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Unit2": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          }
+        },
+        "controller": {
+          "policy": "bounded_anticipatory",
+          "mode": "bounded_anticipatory",
+          "reason": "no_verified_feedback",
+          "emergency_fallback": false,
+          "step_limit_overridden": false,
+          "active_constraints": [],
+          "evidence": "learned_gain_configured_bounds_no_validated_superiority",
+          "feedback": "unavailable"
+        },
+        "next_step": {
+          "status": "await_next_valid_observation",
+          "then": [
+            "update_causal_temporal_features",
+            "reevaluate_inference_and_allocation"
+          ]
+        },
+        "log_odds_contributions": null
+      },
+      {
+        "current": {
+          "icu_hour": 2.0,
+          "static_probability": 0.12000000000000001,
+          "temporal_probability": 0.44,
+          "final_probability": 0.16,
+          "temporal_weight": 0.125,
+          "static_weight": 0.875,
+          "status": "bounded_anticipatory",
+          "reason": "no_verified_feedback"
+        },
+        "previous": {
+          "icu_hour": 1.0,
+          "static_probability": 0.11,
+          "temporal_probability": 0.42000000000000004,
+          "final_probability": 0.14875,
+          "temporal_weight": 0.125,
+          "static_weight": 0.875,
+          "status": "bounded_anticipatory",
+          "reason": "no_verified_feedback"
+        },
+        "change": {
+          "status": "exact",
+          "since": "previous_observed_hour",
+          "elapsed_hours": 1.0,
+          "total": 0.01125000000000001,
+          "static_movement": 0.010000000000000009,
+          "disagreement_movement": 0.0012499999999999942,
+          "controller_reallocation": 0.0,
+          "identity_residual": 6.938893903907228e-18,
+          "unsupported_terms": []
+        },
+        "diagnostics": {
+          "predictive_entropy_nats": 0.439669879401343,
+          "expert_gap": 0.32,
+          "absolute_expert_gap": 0.32,
+          "interpretation": "descriptive_not_calibrated_reliability"
+        },
+        "information_quality": {
+          "observed_vitals": 3,
+          "total_vitals": 7,
+          "vital_completeness": 0.42857142857142855,
+          "missing_vitals": [
+            "O2Sat",
+            "Temp",
+            "SBP",
+            "DBP"
+          ],
+          "availability_status": "source_units_and_availability_unverified"
+        },
+        "measurements": {
+          "HR": {
+            "current_value": 90.0,
+            "missing": false,
+            "last_value": 90.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 2.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "O2Sat": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "Temp": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "SBP": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "MAP": {
+            "current_value": 75.0,
+            "missing": false,
+            "last_value": 75.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 2.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "DBP": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "Resp": {
+            "current_value": 18.0,
+            "missing": false,
+            "last_value": 18.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 2.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "Age": {
+            "current_value": 55.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Gender": {
+            "current_value": 1.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "HospAdmTime": {
+            "current_value": -12.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Unit1": {
+            "current_value": 1.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Unit2": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          }
+        },
+        "controller": {
+          "policy": "bounded_anticipatory",
+          "mode": "bounded_anticipatory",
+          "reason": "no_verified_feedback",
+          "emergency_fallback": false,
+          "step_limit_overridden": false,
+          "active_constraints": [],
+          "evidence": "learned_gain_configured_bounds_no_validated_superiority",
+          "feedback": "unavailable"
+        },
+        "next_step": {
+          "status": "await_next_valid_observation",
+          "then": [
+            "update_causal_temporal_features",
+            "reevaluate_inference_and_allocation"
+          ]
+        },
+        "log_odds_contributions": null
+      },
+      {
+        "current": {
+          "icu_hour": 4.0,
+          "static_probability": 0.14,
+          "temporal_probability": 0.48000000000000004,
+          "final_probability": 0.18250000000000002,
+          "temporal_weight": 0.125,
+          "static_weight": 0.875,
+          "status": "bounded_anticipatory",
+          "reason": "no_verified_feedback"
+        },
+        "previous": {
+          "icu_hour": 2.0,
+          "static_probability": 0.12000000000000001,
+          "temporal_probability": 0.44,
+          "final_probability": 0.16,
+          "temporal_weight": 0.125,
+          "static_weight": 0.875,
+          "status": "bounded_anticipatory",
+          "reason": "no_verified_feedback"
+        },
+        "change": {
+          "status": "exact",
+          "since": "previous_observed_hour",
+          "elapsed_hours": 2.0,
+          "total": 0.02250000000000002,
+          "static_movement": 0.020000000000000004,
+          "disagreement_movement": 0.0025000000000000022,
+          "controller_reallocation": 0.0,
+          "identity_residual": 1.3877787807814457e-17,
+          "unsupported_terms": []
+        },
+        "diagnostics": {
+          "predictive_entropy_nats": 0.47516325938989595,
+          "expert_gap": 0.34,
+          "absolute_expert_gap": 0.34,
+          "interpretation": "descriptive_not_calibrated_reliability"
+        },
+        "information_quality": {
+          "observed_vitals": 2,
+          "total_vitals": 7,
+          "vital_completeness": 0.2857142857142857,
+          "missing_vitals": [
+            "HR",
+            "O2Sat",
+            "Temp",
+            "SBP",
+            "DBP"
+          ],
+          "availability_status": "source_units_and_availability_unverified"
+        },
+        "measurements": {
+          "HR": {
+            "current_value": null,
+            "missing": true,
+            "last_value": 90.0,
+            "age_hours": 2.0,
+            "last_observed_hour": 2.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "O2Sat": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "Temp": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "SBP": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "MAP": {
+            "current_value": 75.0,
+            "missing": false,
+            "last_value": 75.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 4.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "DBP": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "never_observed",
+            "used_by_feature_builder": true
+          },
+          "Resp": {
+            "current_value": 18.0,
+            "missing": false,
+            "last_value": 18.0,
+            "age_hours": 0.0,
+            "last_observed_hour": 4.0,
+            "freshness_status": "observed_hour_proxy",
+            "used_by_feature_builder": true
+          },
+          "Age": {
+            "current_value": 55.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Gender": {
+            "current_value": 1.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "HospAdmTime": {
+            "current_value": -12.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Unit1": {
+            "current_value": 1.0,
+            "missing": false,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          },
+          "Unit2": {
+            "current_value": null,
+            "missing": true,
+            "last_value": null,
+            "age_hours": null,
+            "last_observed_hour": null,
+            "freshness_status": "not_tracked",
+            "used_by_feature_builder": true
+          }
+        },
+        "controller": {
+          "policy": "bounded_anticipatory",
+          "mode": "bounded_anticipatory",
+          "reason": "no_verified_feedback",
+          "emergency_fallback": false,
+          "step_limit_overridden": false,
+          "active_constraints": [],
+          "evidence": "learned_gain_configured_bounds_no_validated_superiority",
+          "feedback": "unavailable"
+        },
+        "next_step": {
+          "status": "await_next_valid_observation",
+          "then": [
+            "update_causal_temporal_features",
+            "reevaluate_inference_and_allocation"
+          ]
+        },
+        "log_odds_contributions": null
+      }
+    ],
+    "capabilities": {
+      "next_hour_forecast": {
+        "status": "unavailable",
+        "reason": "no_separately_validated_forecast",
+        "horizon_hours": 1,
+        "target": "shifted_challenge_label_at_t_plus_1",
+        "probability": null,
+        "model_version": null
+      },
+      "learned_hybrid": {
+        "status": "unavailable",
+        "reason": "no_validated_serving_supervisor"
+      },
+      "clinician_review": {
+        "status": "unavailable",
+        "reason": "no_validated_recommendation_policy_abstain"
+      }
+    },
+    "payload_kind": "synthetic_example",
+    "research_only": true,
+    "clinical_use": false,
+    "limitations": [
+      "Shifted challenge label, not validated clinical onset risk.",
+      "Arithmetic and log-odds attribution are not physiological causality.",
+      "Measurement units and real availability timestamps are source assertions.",
+      "Controller bounds are configured; adaptive superiority is not established.",
+      "No future observations, outcomes or clinical treatment recommendations are used."
+    ]
+  }
+}

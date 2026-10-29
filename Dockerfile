@@ -7,13 +7,13 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir uv
+RUN pip install --no-cache-dir uv==0.11.26
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --locked --no-install-project
 
 COPY src/ ./src/
-RUN uv sync --frozen
+RUN uv sync --locked
 
 
 FROM python:3.12-slim AS runtime

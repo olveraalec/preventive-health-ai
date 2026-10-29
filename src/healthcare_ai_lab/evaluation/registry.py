@@ -126,3 +126,26 @@ def evaluate(y, prediction, sigma=None):
         results[name] = float(value)
 
     return results
+
+
+def evaluate_classification(y, probability, *, config=None):
+    """Separate Bernoulli entry point; never changes the Gaussian METRICS map."""
+    from healthcare_ai_lab.evaluation.classification import (
+        evaluate_classification as score,
+    )
+
+    return score(y, probability, config=config)
+
+
+def evaluate_classification_policies(predictions, outcomes, **kwargs):
+    """Aligned retrospective patient/controller evaluation, separate from forecasting."""
+    from healthcare_ai_lab.evaluation.patient_classification import evaluate_policies
+
+    return evaluate_policies(predictions, outcomes, **kwargs)
+
+
+def classification_metric_definitions():
+    """Discover separate Bernoulli definitions; derived report metrics carry their own metadata."""
+    from healthcare_ai_lab.evaluation.classification import CLASSIFICATION_METRICS
+
+    return {name: spec.definition for name, spec in CLASSIFICATION_METRICS.items()}

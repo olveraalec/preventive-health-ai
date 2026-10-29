@@ -1,0 +1,10 @@
+# Default deny: datasets, local artifacts, credentials and development state must
+# not even be transferred to the builder. Only package build inputs are allowed.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!README.md
+# Do not unignore parent directories: Docker would admit their other files too.
+!src/**/*.py

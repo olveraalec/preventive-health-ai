@@ -357,3 +357,22 @@ def predict_sepsis_raw_trajectory(request: RawTrajectoryRequest):
         raise HTTPException(status_code=422, detail="Incompatible raw trajectory or artifact") from None
     except Exception:  # noqa: BLE001 -- do not expose model plugin errors
         raise HTTPException(status_code=503, detail="Static research inference unavailable") from None
+
+
+from healthcare_ai_lab.trajectories.decision_contracts import DecisionSummaryResponse
+from healthcare_ai_lab.trajectories.decisions import summarize_raw_trajectory
+
+
+@app.post("/api/v1/research/sepsis/trajectory/decision-summary", response_model=DecisionSummaryResponse)
+def predict_sepsis_decision_summary(request: RawTrajectoryRequest, include_contributions: bool = False):
+    """Causal research interpretation; no labels, treatment or future forecast inputs."""
+    try:
+        bundle = get_research_bundle()
+    except (FileNotFoundError, OSError, ValueError):
+        raise HTTPException(status_code=503, detail="Research artifact unavailable") from None
+    try:
+        return summarize_raw_trajectory(bundle, request, include_contributions=include_contributions)
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(status_code=422, detail="Incompatible raw trajectory or artifact") from None
+    except Exception:  # noqa: BLE001 -- never expose source rows through model errors
+        raise HTTPException(status_code=503, detail="Static research inference unavailable") from None
