@@ -38,6 +38,7 @@ export interface DecisionSummary {
     source_availability_verified: false
     measurements: Record<string, { observed: boolean; age_hours: number | null }>
     missing_count: number | null; missing_fraction: number | null
+    missing_vitals?: string[]
     engineered_feature_count: number | null; engineered_missing_count: number | null
   }
   controller: {

@@ -3,6 +3,7 @@ import { observationEvidence } from '../lib/observations.ts'
 import { InfoQuality } from './Panels.tsx'
 import { UNITS } from '../types/trajectory.ts'
 import { Icon } from './Icon.tsx'
+import type { WorkspaceSource } from '../lib/source.ts'
 
 function MeasurementTrend({ points, name }: { points: { hour: number; value: number | null }[]; name: string }) {
   const observed = points.filter((point): point is { hour: number; value: number } => point.value !== null)
@@ -23,9 +24,9 @@ function MeasurementTrend({ points, name }: { points: { hour: number; value: num
 }
 
 export function ObservationEvidence({ request, hour, source }: {
-  request: RawTrajectoryRequest | null; hour: number; source: 'synthetic' | 'api' | 'api-synthetic-inputs'
+  request: RawTrajectoryRequest | null; hour: number; source: WorkspaceSource
 }) {
-  if (!request) return <section className="panel observation-unavailable" aria-label="Observation evidence"><Icon name="info" /><div><h3>Observation values are unavailable in this documented example.</h3><p>The v0.6 engineered fixture contains probabilities, not raw vital signs. Connect a raw-hourly request to see its measurements, units, changes and age. No signals are invented to fill this view.</p></div></section>
+  if (!request) return <section className="panel observation-unavailable" aria-label="Observation evidence"><Icon name="info" /><div><h3>{source === 'retrospective-export' ? 'Raw observations were redacted from this retrospective export.' : 'Raw observation values are unavailable in this response.'}</h3><p>Probabilities, allocations and exact change explanations remain available. Raw measurements, per-vital ages and log-odds vectors are not reconstructed. Aggregate completeness and missingness remain visible in Evidence & uncertainty.</p></div></section>
   const evidence = observationEvidence(request, hour)
   return <section className="observation-evidence" aria-labelledby="observation-title">
     <div className="panel-heading"><div><span className="eyebrow">Available observations</span><h3 id="observation-title">What changed in the evidence?</h3></div><span className={source !== 'api' ? 'source-badge synthetic' : 'source-badge api'}>{source === 'synthetic' ? 'Documented synthetic observations' : source === 'api-synthetic-inputs' ? 'Synthetic inputs · model outputs' : 'Authorized request inputs'}</span></div>

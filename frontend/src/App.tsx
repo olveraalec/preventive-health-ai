@@ -9,6 +9,7 @@ import { ResearchAudit } from './components/ResearchAudit.tsx'
 import { SYNTHETIC_REQUEST } from './fixtures/synthetic.ts'
 import { useResearchWorkspace } from './hooks/useResearchWorkspace.ts'
 import { percent, points } from './lib/format.ts'
+import { retainedSource, sourceDescription } from './lib/source.ts'
 import './App.css'
 
 const navigation = [
@@ -50,7 +51,7 @@ function App() {
           <p className="hero-disclaimer"><span className="status-dot" /> Research prototype. Not clinically validated.</p>
         </div>
         <div className="hero-instrument"><div className="instrument-caption"><span>OBSERVE / INTERPRET / REEVALUATE</span><span>01—04</span></div>
-          <div className="snapshot-card"><div className="snapshot-heading"><span><Icon name="signal" size={16} /> Decision snapshot</span><span className="snapshot-label">{workspace.source === 'synthetic' ? 'SYNTHETIC FIXTURE' : workspace.source === 'api-synthetic-inputs' ? 'SYNTHETIC INPUTS' : 'API OUTPUT'}</span></div>
+          <div className="snapshot-card"><div className="snapshot-heading"><span><Icon name="signal" size={16} /> Decision snapshot</span><span className="snapshot-label">{workspace.source === 'synthetic' ? 'SYNTHETIC FIXTURE' : workspace.source === 'api-synthetic-inputs' ? 'SYNTHETIC INPUTS' : workspace.source === 'retrospective-export' ? 'RETROSPECTIVE EXPORT' : 'API OUTPUT'}</span></div>
             <div className="snapshot-number"><span>Blended probability · ICU hour {summary.current.icu_hour}</span><strong>{percent(summary.current.final_probability)}<span aria-hidden="true">{summary.change.probability_delta === null ? '—' : summary.change.probability_delta > 0 ? '↗' : summary.change.probability_delta < 0 ? '↘' : '→'}</span></strong></div>
             <div className="snapshot-delta">{points(summary.change.probability_delta)} <span>since previous observed hour</span></div>
             <div className="snapshot-rule" />
@@ -62,7 +63,7 @@ function App() {
       </section>
       <div className="principles-strip"><span><Icon name="signal" size={17} /> Time-aware observations</span><span><Icon name="layers" size={17} /> Visible model contributions</span><span><Icon name="chart" size={17} /> Evidence before adaptation</span><span><Icon name="book" size={17} /> Traceable research</span></div>
       <div className="workspace-container">
-        <div className="workspace-toolbar"><div><span className="eyebrow">The research workspace</span><p>{workspace.source === 'synthetic' ? 'A documented synthetic example. Explore without a model or patient data.' : workspace.source === 'api-synthetic-inputs' ? 'Synthetic inputs sent to the unchanged trained model. API predictions, not patient records or cohort evaluation.' : 'Displaying an API response. This is research inference, not a live clinical monitor.'}</p></div><div className="toolbar-actions"><button type="button" className="button secondary" onClick={workspace.useSynthetic} disabled={workspace.source === 'synthetic' && workspace.status === 'idle'}>Use synthetic example</button><a className="text-link" href="#api-connection" onClick={() => setConnectionOpen(true)}>Connect API <Icon name="arrow" size={16} /></a></div></div>
+        <div className="workspace-toolbar"><div><span className="eyebrow">The research workspace</span><p>{sourceDescription[workspace.source]}</p></div><div className="toolbar-actions"><button type="button" className="button secondary" onClick={workspace.useSynthetic} disabled={workspace.source === 'synthetic' && workspace.status === 'idle'}>Use synthetic example</button><a className="text-link" href="#api-connection" onClick={() => setConnectionOpen(true)}>Connect API / export <Icon name="arrow" size={16} /></a></div></div>
         <div className="view-mode" role="group" aria-label="Workspace perspective"><button type="button" aria-pressed={viewMode === 'monitoring'} onClick={() => setViewMode('monitoring')}>Monitoring perspective</button><button type="button" aria-pressed={viewMode === 'research'} onClick={() => setViewMode('research')}>Research perspective</button><span>One episode, shared decisions. Research-only use.</span></div>
         <PatientMonitoring trajectory={workspace.trajectory} selectedIndex={workspace.selectedIndex} onSelect={workspace.setSelectedIndex} source={workspace.source} />
         <div hidden={viewMode !== 'monitoring'}><ObservationEvidence request={workspace.observationRequest} hour={summary.current.icu_hour} source={workspace.source} /></div>
@@ -79,7 +80,13 @@ function App() {
           <div className="explorer-callout"><div className="explorer-icon"><Icon name="chart" size={30} /></div><div><span className="eyebrow">A separate research explorer</span><h3>Go deeper with Streamlit.</h3><p>The teammate’s research dashboard remains independent: exploratory trajectories, thresholds, vital-sign trends and retrospective metrics.</p></div>{explorer ? <a className="button secondary" href={explorer} target="_blank" rel="noopener noreferrer">Open Research Explorer <Icon name="external" size={16} /></a> : <span className="small-chip">Explorer link not configured</span>}</div>
         </section>
         <section id="api-connection" className="workspace-section api-connection">
-          <details open={connectionOpen} onToggle={event => setConnectionOpen(event.currentTarget.open)}><summary><span><Icon name="layers" /> Connect an authorized research API</span><span className="small-chip">Optional</span></summary><div className="api-form-content"><p>Submit a raw-hourly Sepsis trajectory with model identifiers from the installed manifest. No patient record is saved in browser storage. Use an approved research episode; do not paste credentials or labels.</p>
+          <details open={connectionOpen} onToggle={event => setConnectionOpen(event.currentTarget.open)}><summary><span><Icon name="layers" /> Connect an API or open a local export</span><span className="small-chip">Optional</span></summary><div className="api-form-content"><p>Submit a raw-hourly Sepsis trajectory with model identifiers from the installed manifest, or select a sanitized retrospective export. Nothing is saved in browser storage. Do not paste credentials or labels.</p>
+            <div className="sample-request"><h3>Open private retrospective outputs</h3><p>Select the backend's sanitized retrospective JSON export. It is read locally into browser memory, never uploaded or bundled into this website. Export provenance remains as declared by the file.</p><label htmlFor="retrospective-export">Sanitized retrospective export</label><input id="retrospective-export" type="file" accept="application/json,.json" disabled={workspace.status === 'loading'} onChange={async event => {
+              const input = event.currentTarget
+              const file = input.files?.[0]
+              if (file && await workspace.loadRetrospective(file)) { setRequest(''); setViewMode('monitoring'); document.querySelector('#patient-monitoring')?.scrollIntoView() }
+              input.value = ''
+            }} /></div>
             <div className="sample-request"><h3>A complete synthetic-input journey</h3><p>Use the teammate's 24-hour synthetic observations with the installed, unchanged research model. These are not patient records. Supply identifiers from the approved model manifest.</p><div className="model-identifiers"><label>Artifact identifier<input value={artifactId} onChange={event => setArtifactId(event.target.value)} placeholder="From installed manifest" /></label><label>Model version<input value={modelVersion} onChange={event => setModelVersion(event.target.value)} placeholder="From installed manifest" /></label><button type="button" className="button secondary" disabled={!artifactId || !modelVersion || workspace.status === 'loading'} onClick={async () => {
               const sample = JSON.stringify({ ...SYNTHETIC_REQUEST, model: { artifact_id: artifactId, model_version: modelVersion } })
               if (await workspace.load(sample, true)) { setRequest(''); setViewMode('monitoring'); document.querySelector('#patient-monitoring')?.scrollIntoView() }
@@ -87,9 +94,9 @@ function App() {
             <form onSubmit={async event => { event.preventDefault(); if (await workspace.load(request, false)) setRequest('') }}>
             <label htmlFor="trajectory-request">Or submit an authorized raw-hourly request JSON</label><textarea id="trajectory-request" value={request} onChange={event => setRequest(event.target.value)} spellCheck={false} disabled={workspace.status === 'loading'} placeholder={'{"dataset":"sepsis2019","episode_id":"…","model":{"artifact_id":"…","model_version":"…"},"observations":[…]}'} required rows={7} />
             <div className="form-actions"><button className="button primary" type="submit" disabled={workspace.status === 'loading'}>{workspace.status === 'loading' ? 'Running inference…' : 'Run research inference'}<Icon name="arrow" size={17} /></button><span className="fine-print">Requires an available FastAPI model artifact.</span></div>
-            {workspace.status === 'loading' && <p role="status" className="inline-note">Request in progress. Existing displayed data has not been replaced.</p>}
-            {workspace.error && <div className="error-box" role="alert"><strong>{workspace.error}</strong><p>{workspace.source === 'synthetic' ? 'Still showing the explicitly labeled synthetic example.' : 'Still showing the last successful API response.'} Check the request and connection, then retry.</p></div>}
-            {workspace.status === 'success' && <p role="status" className="inline-note">Research response loaded. Monitoring and interpretation now display API outputs.</p>}
+            {workspace.status === 'loading' && <p role="status" className="inline-note">Loading research data. Existing displayed data has not been replaced.</p>}
+            {workspace.error && <div className="error-box" role="alert"><strong>{workspace.error}</strong><p>{retainedSource[workspace.source]} Check the request, file or connection, then retry.</p></div>}
+            {workspace.status === 'success' && <p role="status" className="inline-note">{workspace.source === 'retrospective-export' ? 'Retrospective export loaded locally. Timeline, controller and interpretation display the imported decisions. No file was uploaded.' : 'Research response loaded. Monitoring and interpretation now display API outputs.'}</p>}
           </form></div></details>
         </section>
       </div>

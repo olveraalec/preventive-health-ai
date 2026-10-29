@@ -181,7 +181,7 @@ selection, research-mode metric selection, error/retry/reset and no browser stor
 or iframe. Screenshots are ignored under `frontend/test-results/`.
 
 Final checks passed: production build, TypeScript build-mode checking, Oxlint
-without warnings, **18 unit tests**, fixture browser regressions and the real API
+without warnings, **23 unit tests**, fixture browser regressions and the real API
 HTTP/browser regressions. Desktop (1440px) and mobile (390px) screenshots were
 visually reviewed with no horizontal overflow. The unchanged repository Python
 suite also passed **168 tests, 17 skips**: 15 opt-in DB cases and two optional local
@@ -260,3 +260,75 @@ identifiers; actual Streamlit URL; a separately reviewed aggregate evaluation en
 with real model/split provenance before displaying model/cohort calibration or paired
 results. Forecasting, learned hybrid serving and clinician-review validation remain
 outside this integration. Nothing here authorizes deployment or clinical use.
+
+## Private retrospective export integration
+
+Select **Connect API / export → Open private retrospective outputs**, then choose
+`retrospective-01.json` from the backend's ignored `results/dashboard/` directory.
+Do not move it into this repository, `frontend/public`, or the build assets.
+
+The file picker reads the selected file locally into React memory. It sends no API
+request and stores no browser data. It accepts only `sepsis-decision-summary.v1`
+with `payload_kind=sanitized_retrospective_demo`, declared checksum-bound artifact
+metadata, and **null measurements and log-odds contribution vectors for every
+record**. Other payload kinds, malformed histories, unredacted fields, empty files
+and files over 5 MiB are rejected. The previous view remains visible on failure.
+File authenticity and historical training are not independently verified in React;
+provenance is displayed as declared by the chosen file.
+
+Successful import updates the same timeline, previous/current probabilities,
+controller weights, change terms, entropy, disagreement and fallback panels. The
+banner says **Retrospective model outputs · local export**, not synthetic input or
+a live API stream. Aggregate missingness/completeness is preserved. Raw values,
+per-vital ages and logistic contribution vectors remain explicitly unavailable
+when redacted. Earlier availability of explanations during backend verification
+does not make the removed vectors available in this sanitized file.
+
+Derived trajectories remain sensitive. There is no automatic filesystem loading,
+export upload, browser persistence or automatic switch to synthetic values. The
+separate synthetic evaluation study is labeled as unrelated to this episode/model;
+a decision export is not a cohort evaluation report. Use **Use synthetic example**
+only when explicitly switching back to demonstration data.
+
+New implementation files are `src/api/retrospective.ts` (file/schema/redaction
+checks), `src/lib/source.ts` (source labels and retained-data messages), and
+`tests/retrospective.test.ts`. Existing workspace/panels are extended additively.
+
+An optional local-file browser regression uses:
+
+```bash
+RETROSPECTIVE_EXPORT_PATH=/absolute/path/to/retrospective-01.json \
+  npm --prefix frontend run test:browser
+```
+
+Set `RETROSPECTIVE_EXPECTED_RECORDS` for an export other than 37 records. To also
+exercise the real API, supply the existing model-identifier variables and
+`REAL_API=1`. Without that flag, all test API calls are synthetic mocks; the selected
+local export is still loaded through the actual browser file picker. Import checks
+save no private record values or screenshots, assert no additional API request or
+browser storage, exercise first-observation selection and rejection of an invalid
+replacement file, then explicitly reset to the synthetic view.
+
+The owner-authorized export's aggregate structure was inspected read-only: 37 ICU
+records, `checksum_bound_manifest`, all measurement/contribution vectors redacted,
+maximum reported change residual `4.119968255444917e-18`. It was not copied into this
+worktree. Source-level model/feature parity and 74 pre-redaction explanations remain
+backend verification evidence, not newly reproduced training or clinical results.
+
+For the current Streamlit page inventory, CSV/contract compatibility, dependency
+prerequisites, safe link configuration and the multi-terminal hackathon sequence,
+see [STREAMLIT_RESEARCH_EXPLORER.md](STREAMLIT_RESEARCH_EXPLORER.md). That audit pins
+the inspected remote commit and distinguishes source inspection from runtime checks.
+
+Retrospective milestone verification: build, typecheck, warning-free lint and
+23 frontend tests passed; the full unchanged Python suite passed 168 tests with
+17 skips (15 opt-in DB cases and two optional local files). Fixture browser checks
+and the actual 37-record file-picker import passed, including failed-import retention,
+no extra API request and no browser persistence. The combined real FastAPI/browser
+run also passed after the owner restarted port 8003: canonical POST HTTP 200,
+24 synthetic input hours, prefix/measurement parity, followed by the private local
+37-hour import. No retrospective record values or screenshots were saved.
+The evaluation-summary route remains 404. Model Evaluation is confirmed not yet
+pushed by the teammate, and the deployment URL is unconfirmed: the existing
+“Explorer link not configured” state remains unchanged. No local/public URL was
+hardcoded into the React link.

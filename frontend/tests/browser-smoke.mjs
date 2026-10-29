@@ -144,6 +144,40 @@ try {
   console.log('Browser checks passed: desktop/mobile rendering, hour and metric selection, API error/retry/reset, no iframe or browser persistence. All API calls were intercepted with synthetic fixtures.')
   console.log('Screenshots: frontend/test-results/desktop.png and mobile.png')
   }
+  // This segment never captures screenshots or logs imported record values.
+  // Use only the owner-authorized sanitized file when explicitly configured.
+  await evaluate('document.querySelector(".toolbar-actions .text-link").click()')
+  await until(() => evaluate('document.querySelector(".api-connection details").open'), 'local export disclosure')
+  const requestCountBeforeImport = apiStatuses.length
+  let expectedRecords = 3
+  if (process.env.RETROSPECTIVE_EXPORT_PATH) {
+    expectedRecords = Number(process.env.RETROSPECTIVE_EXPECTED_RECORDS || 37)
+    const document = await send('DOM.getDocument')
+    const input = await send('DOM.querySelector', { nodeId: document.root.nodeId, selector: '#retrospective-export' })
+    await send('DOM.setFileInputFiles', { nodeId: input.nodeId, files: [process.env.RETROSPECTIVE_EXPORT_PATH] })
+  } else {
+    const sanitized = syntheticDecisionEpisode().response
+    sanitized.payload_kind = 'sanitized_retrospective_demo'
+    sanitized.artifact_integrity = 'checksum_bound_manifest'
+    sanitized.artifact_sha256 = 'a'.repeat(64)
+    sanitized.records.forEach(record => { record.measurements = null; record.log_odds_contributions = null })
+    await evaluate(`(() => { const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(JSON.stringify(sanitized))}], 'synthetic-redacted-export.json', { type: 'application/json' })); const input = document.querySelector('#retrospective-export'); input.files = transfer.files; input.dispatchEvent(new Event('change', { bubbles: true })); })()`)
+  }
+  await until(() => evaluate('document.querySelector(".api-form-content").textContent.includes("Retrospective export loaded locally")'), 'sanitized retrospective import')
+  assert.equal(await evaluate('document.querySelectorAll(".hour").length'), expectedRecords)
+  assert.ok(await evaluate('document.querySelector("#patient-monitoring .source-badge").textContent.includes("Retrospective model outputs")'))
+  assert.ok(await evaluate('document.querySelector(".observation-unavailable").textContent.includes("redacted")'))
+  assert.equal(await evaluate('document.querySelectorAll(".measurement-card").length'), 0)
+  assert.equal(apiStatuses.length, requestCountBeforeImport, 'local import must not send network requests')
+  assert.equal(await evaluate('localStorage.length + sessionStorage.length'), 0)
+  await evaluate('document.querySelectorAll(".hour")[0].click()')
+  await until(() => evaluate('document.querySelector(".prediction-comparison").textContent.includes("No previous")'), 'retrospective first-observation selection')
+  await evaluate('(() => { const transfer = new DataTransfer(); transfer.items.add(new File(["not-json"], "invalid-synthetic-test.json", { type: "application/json" })); const input = document.querySelector("#retrospective-export"); input.files = transfer.files; input.dispatchEvent(new Event("change", { bubbles: true })); })()')
+  await until(() => evaluate('document.querySelector(".error-box")?.textContent.includes("Still showing the last successfully imported retrospective export")'), 'failed import preserves retrospective data')
+  assert.equal(await evaluate('document.querySelectorAll(".hour").length'), expectedRecords)
+  await evaluate('document.querySelector(".toolbar-actions button").click()')
+  await until(() => evaluate('document.querySelector("#patient-monitoring .source-badge").textContent.includes("Synthetic example")'), 'explicit synthetic switch after retrospective import')
+  console.log(`Local retrospective import checks passed: ${expectedRecords} records, no upload/storage, distinct labels, redaction retained, invalid-file failure preserves prior view. No imported record values or screenshots were saved.`)
 } finally {
   socket?.close()
   browser?.kill()

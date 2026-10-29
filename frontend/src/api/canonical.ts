@@ -158,6 +158,7 @@ export function canonicalView(wire: CanonicalDecisionResponse): TrajectoryRespon
         source_availability_verified: false,
         measurements: Object.fromEntries(Object.entries(record.measurements ?? {}).filter(([, m]) => m.freshness_status !== 'not_tracked').map(([name, m]) => [name, { observed: !m.missing, age_hours: m.age_hours }])),
         missing_count: record.information_quality.missing_vitals.length,
+        missing_vitals: record.information_quality.missing_vitals,
         missing_fraction: 1 - record.information_quality.vital_completeness,
         engineered_feature_count: null, engineered_missing_count: null,
       },
