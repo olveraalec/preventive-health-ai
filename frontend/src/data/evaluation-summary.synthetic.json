@@ -1,0 +1,228 @@
+{
+  "schema_version": "evaluation-summary.v0.6",
+  "category": "retrospective_label_dependent",
+  "status": "available_recorded_synthetic_evidence_only",
+  "installed_sepsis_model_evaluation": "unavailable",
+  "live_labels_used": false,
+  "experiments": [
+    {
+      "experiment_id": "synthetic_conditional_allocation.v0.1",
+      "dataset": "synthetic_binary_sequences",
+      "target": "simulated_binary_event",
+      "split": "held_out_test",
+      "n_test_episodes": 600,
+      "provenance": {
+        "source_path": "markdowns/SYNTHETIC_CONDITIONAL_ALLOCATION_SANITY_EXPERIMENT_v0.1.md",
+        "source_sha256": "da2cdc0156faadea45eec6ed59523827c8749c04a267f3fab7dbdafe8222abaf",
+        "evidence_status": "document_reported_not_reproduced_here",
+        "precision": "rounded_to_6_decimal_places_in_source",
+        "model_artifact_sha256": null,
+        "score_clipping_epsilon": null,
+        "missing_provenance": [
+          "numeric_seed_not_recorded",
+          "score_clipping_not_recorded",
+          "cvar_finite_sample_convention_not_recorded",
+          "reference_script_not_available"
+        ]
+      },
+      "policies": [
+        {
+          "policy_id": "static",
+          "metrics": [
+            {
+              "metric_id": "patient_mean_bernoulli_log_loss",
+              "value": 0.099691,
+              "direction": "minimize",
+              "aggregation": "patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "patient_cvar90_bernoulli_log_loss",
+              "value": 0.513579,
+              "direction": "minimize",
+              "aggregation": "patient_upper_tail_90",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "positive_patient_mean_bernoulli_log_loss",
+              "value": 0.409814,
+              "direction": "minimize",
+              "aggregation": "retrospective_positive_patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            }
+          ]
+        },
+        {
+          "policy_id": "training_selected_constant",
+          "metrics": [
+            {
+              "metric_id": "patient_mean_bernoulli_log_loss",
+              "value": 0.096219,
+              "direction": "minimize",
+              "aggregation": "patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "patient_cvar90_bernoulli_log_loss",
+              "value": 0.483398,
+              "direction": "minimize",
+              "aggregation": "patient_upper_tail_90",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "positive_patient_mean_bernoulli_log_loss",
+              "value": 0.392995,
+              "direction": "minimize",
+              "aggregation": "retrospective_positive_patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            }
+          ]
+        },
+        {
+          "policy_id": "global_brier_moment",
+          "metrics": [
+            {
+              "metric_id": "patient_mean_bernoulli_log_loss",
+              "value": 0.096218,
+              "direction": "minimize",
+              "aggregation": "patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "patient_cvar90_bernoulli_log_loss",
+              "value": 0.483395,
+              "direction": "minimize",
+              "aggregation": "patient_upper_tail_90",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "positive_patient_mean_bernoulli_log_loss",
+              "value": 0.392992,
+              "direction": "minimize",
+              "aggregation": "retrospective_positive_patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            }
+          ]
+        },
+        {
+          "policy_id": "conditional_two_regime_moment",
+          "metrics": [
+            {
+              "metric_id": "patient_mean_bernoulli_log_loss",
+              "value": 0.089724,
+              "direction": "minimize",
+              "aggregation": "patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "patient_cvar90_bernoulli_log_loss",
+              "value": 0.470539,
+              "direction": "minimize",
+              "aggregation": "patient_upper_tail_90",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "positive_patient_mean_bernoulli_log_loss",
+              "value": 0.394507,
+              "direction": "minimize",
+              "aggregation": "retrospective_positive_patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            }
+          ]
+        },
+        {
+          "policy_id": "shuffled_context_control",
+          "metrics": [
+            {
+              "metric_id": "patient_mean_bernoulli_log_loss",
+              "value": 0.096188,
+              "direction": "minimize",
+              "aggregation": "patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "patient_cvar90_bernoulli_log_loss",
+              "value": 0.483625,
+              "direction": "minimize",
+              "aggregation": "patient_upper_tail_90",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            },
+            {
+              "metric_id": "positive_patient_mean_bernoulli_log_loss",
+              "value": 0.392895,
+              "direction": "minimize",
+              "aggregation": "retrospective_positive_patient_mean",
+              "unit": "nats",
+              "metric_version": "1",
+              "category": "retrospective_label_dependent"
+            }
+          ]
+        }
+      ],
+      "comparison": {
+        "reference_policy_id": "training_selected_constant",
+        "candidate_policy_id": "conditional_two_regime_moment",
+        "metric": {
+          "metric_id": "paired_patient_log_loss_gain",
+          "value": 0.006495,
+          "direction": "maximize",
+          "aggregation": "paired_patient_mean_reference_minus_candidate",
+          "unit": "nats",
+          "metric_version": "1",
+          "category": "retrospective_label_dependent"
+        },
+        "ci95": [
+          0.004191,
+          0.008847
+        ],
+        "interval_method": "exploratory_paired_patient_percentile_bootstrap",
+        "bootstrap_replicates": 1500
+      },
+      "limitations": [
+        "Not Sepsis model evaluation or clinical evidence",
+        "Conditional policy worsened positive-patient mean loss versus constant",
+        "Document-reported results; reference implementation not reproduced here"
+      ]
+    }
+  ],
+  "unavailable_metrics": [
+    "auroc",
+    "auprc",
+    "brier_score",
+    "ece",
+    "calibration",
+    "win_rate",
+    "retrospective_alert_burden"
+  ],
+  "unavailable_reason": "not_recorded_in_available_versioned_result",
+  "research_only": true,
+  "clinical_use": false
+}
