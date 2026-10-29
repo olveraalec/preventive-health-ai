@@ -58,8 +58,8 @@ Restart Vite after changing `frontend/.env.local`.
   approved CORS arrangement. It precedes `/api/v1`; do not append `/api` or include
   credentials, a query string or a fragment.
 - Set `VITE_STREAMLIT_URL` to the teammate's actual HTTP(S) address. It opens a
-  separate tab with `noopener noreferrer`; there is no iframe. Its address was not
-  supplied, so the link is visibly unconfigured until an owner provides it.
+  separate tab with `noopener noreferrer`; there is no iframe. The configured local
+  demo uses `http://127.0.0.1:8501`; blank deployments remain visibly unconfigured.
 - The optional public model identifiers populate the synthetic-input form. They
   identify the installed model; they are not model artifacts or authentication.
   All `VITE_` values are public build inputs; no credentials belong here.
@@ -136,9 +136,10 @@ Both requested refs were fetched and inspected without changing checkouts:
   predictions are deliberately not displayed as current backend outputs.
 - Kept the newer typed/error-checked client instead of replacing it with the older
   fetch-only implementation. The App shell and v0.6 interpretation remain intact.
-- `origin/dashboard-demo`, commit **937b576**: inspected the Streamlit dashboard,
-  preserved it independently. Its label-dependent onset/alert calculations were not
-  moved into React inference. Screenshots were treated as visual references only.
+- `origin/dashboard-demo`, commit **c28e2ad**: all three Streamlit pages run in a
+  separate pinned worktree/environment. Their retrospective evaluation and chart
+  implementations remain independent; no label-dependent calculations moved into
+  React inference. See the Explorer runbook for verified contracts and metric caveats.
 
 The pre-inspection React work was preserved in an independent archive and tracked
 patch under `/private/tmp/preventive-react-checkpoint-qo0nsfdn`. No branch was merged,
@@ -222,8 +223,8 @@ The separate real Chrome test exercised **React → Vite `/api` proxy → FastAP
 received HTTP 200, validated the canonical response and displayed 24-hour predictions,
 allocations and explanations. Its optional evaluation GET returned 404 and was handled
 explicitly. These are engineering integration checks on synthetic observations, not
-validation on real patients or proof of adaptive benefit. No DB, AWS or Streamlit
-service was changed or contacted by these integration tests.
+validation on real patients or proof of adaptive benefit. No DB or AWS service was
+changed. The separate Explorer browser checks also contact the local Streamlit app.
 
 The backend briefly became unavailable (`ECONNREFUSED`) during validation, then
 returned before final checks. The final real HTTP rerun passed again, including
@@ -249,14 +250,14 @@ pushed or merged automatically. Every subsequent changed file is under `frontend
    `App.css` and `api/client.ts` by reviewing/composing the changes. This candidate
    already reuses its panels and raw-input generator; do not replace the frontend
    directory wholesale or use broad `--ours`/`--theirs` conflict resolutions.
-5. Preserve all teammate Streamlit/Python files and its launch/configuration. Supply
-   its actual URL, test the external link, and preserve the backend's canonical API
-   schema. No automatic branch merge or wholesale dashboard replacement is needed.
+5. Preserve all teammate Streamlit/Python files and the pinned Explorer environment.
+   Use the configurable local URL and tested external link, preserving the backend's
+   canonical API schema. No automatic merge or dashboard replacement is needed.
 6. Re-run frontend checks and real synthetic-input API integration on the composed
    candidate. Preserve the existing lockfile; no dependency versions changed here.
 
 Remaining prerequisites: available backend for live inference; installed public model
-identifiers; actual Streamlit URL; a separately reviewed aggregate evaluation endpoint
+identifiers; a separately reviewed aggregate evaluation endpoint
 with real model/split provenance before displaying model/cohort calibration or paired
 results. Forecasting, learned hybrid serving and clinician-review validation remain
 outside this integration. Nothing here authorizes deployment or clinical use.
@@ -328,7 +329,29 @@ no extra API request and no browser persistence. The combined real FastAPI/brows
 run also passed after the owner restarted port 8003: canonical POST HTTP 200,
 24 synthetic input hours, prefix/measurement parity, followed by the private local
 37-hour import. No retrospective record values or screenshots were saved.
-The evaluation-summary route remains 404. Model Evaluation is confirmed not yet
-pushed by the teammate, and the deployment URL is unconfirmed: the existing
-“Explorer link not configured” state remains unchanged. No local/public URL was
-hardcoded into the React link.
+The React evaluation-summary route remains 404. Streamlit's independent Model
+Evaluation page is now present at c28e2ad and verified in simulated mode. The local
+Explorer URL is explicitly configured; no public URL is hardcoded into React.
+
+## Final Research Explorer milestone (c28e2ad)
+
+The complete three-page Streamlit application is now pinned and running in the
+separate `hackathon-streamlit-demo` worktree with a hashed Explorer-only environment.
+The local configurable link targets `http://127.0.0.1:8501`; it is not a public
+deployment default. Run `npm --prefix frontend run explorer` for Streamlit, and
+`npm --prefix frontend run dev` for React. The exact three-service commands, both
+CSV contracts, source/metric caveats, setup pins and verification are in
+[STREAMLIT_RESEARCH_EXPLORER.md](STREAMLIT_RESEARCH_EXPLORER.md). No existing React
+design, importer or backend implementation changed in this step.
+
+Additional checks:
+
+```bash
+../hackathon-streamlit-demo/.venv/bin/python frontend/tests/explorer_smoke.py ../hackathon-streamlit-demo
+VERIFY_EXPLORER=1 npm --prefix frontend run test:browser
+```
+
+The first executes all unchanged pages in explicitly simulated mode. The second
+clicks the actual configured link and visits all three pages in a separate browser
+tab. Streamlit has no real CSV inputs in this demo, so calibration/bootstrap/policy
+results are labeled simulated and are not evidence of trained-model improvement.

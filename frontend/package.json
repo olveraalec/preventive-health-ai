@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "explorer": "node explorer/start.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "node --test tests/*.test.ts",

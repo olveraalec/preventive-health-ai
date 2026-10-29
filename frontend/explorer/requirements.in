@@ -1,0 +1,5 @@
+# Research Explorer only. Never install into the verified FastAPI model environment.
+streamlit
+plotly
+numpy
+pandas

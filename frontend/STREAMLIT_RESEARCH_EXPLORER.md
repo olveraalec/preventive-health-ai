@@ -1,165 +1,217 @@
-# Independent Streamlit Research Explorer: integration audit and demo runbook
+# Research Explorer — pinned three-service demonstration
 
-Inspected read-only on 2026-10-28: `origin/dashboard-demo` at
-`ccf5b3f7637108a0710362063d4bdd5a7f8ef087` (`WIP: dashboard updates`). The ref was
-fetched without merging or switching checkouts. React remains the main product;
-no Streamlit charts, Python, model artifacts or backend routes were changed.
+Verified 2026-10-28 against `origin/dashboard-demo` commit
+**`c28e2ad51f2b9304f99637f6f720e41f2be92bdf`**. This supersedes the earlier ccf5b3f
+source-only audit. The historical audit remains in frontend commit 9b9c280.
 
-The audit reads code/configuration only. No CSV records were opened, converted or
-uploaded; no training script was executed. Runtime Streamlit behavior is not
-verified: its optional packages are absent from this worktree's locked environment,
-and no Streamlit health endpoint was reachable on `127.0.0.1:8501`.
+React remains the primary product. Streamlit runs in its own detached worktree and
+virtual environment; no Streamlit chart is rebuilt or embedded in React. The React
+visual design, canonical API client, 37-hour importer, backend, model artifacts,
+mathematical implementations and evaluation source/results are unchanged.
 
-## Pages present in the fetched commit
+## Reviewed pages and data contracts
 
-| Entry point | Implemented functionality | Data and interpretation boundary |
+| Page | Available exploration | Source boundary |
 |---|---|---|
-| `dashboard/app.py` | Main **ICU Retrospective Research Dashboard**; episode selector; exploratory threshold slider (0.05–0.95); final probability plus optional static/temporal overlays; synchronized HR, MAP, respiratory-rate and temperature traces; threshold/first-crossing markers; retrospective case, lead-time and false-alarm summaries when labels exist | Missing CSV generates 40 synthetic episodes with an intentionally built-in signal and explicit simulated warnings. Label-free files suppress detection metrics/onset interpretation. Label-based event markers are retrospective heuristics, not validated clinical onset. |
-| `dashboard/pages/1_Adaptive_Decisions.py` | **Adaptive AI decisions**; episode selector; tolerance slider for display classification; stable/adapting/fallback counts; synchronized static/temporal/final, temporal allocation, disagreement and entropy plots; fallback shading; explanatory expander | Missing CSV produces three hand-made, 48-hour simulated episodes. “Adapting” means absolute allocation movement exceeds the UI tolerance; it is not calibrated reliability or evidence of benefit. Fallback comes from the status field. Entropy is descriptive. |
+| `dashboard/app.py` — Patient Monitoring | Episode selector, threshold slider, final/static/temporal overlays, HR/MAP/Resp/Temp traces, retrospective threshold-crossing and label-dependent lead/alert summaries | Reads `data/predictions.csv`; without it generates 40 simulated episodes and displays a strong simulated-data warning. Thresholds are exploratory, not treatment triggers. |
+| `dashboard/pages/1_Adaptive_Decisions.py` | Probability, temporal allocation, disagreement and entropy traces; fallback shading; stable/adapting/fallback counts; user-controlled movement tolerance | Reads the same CSV; without it generates three hand-made 48-hour episodes and warns the allocation pattern is not model behavior. Stable/adapting is a display rule. |
+| `dashboard/pages/2_Model_Evaluation.py` | Policy loss/Brier/approximate AUPRC tables, patient-bootstrap intervals, paired patient change boxplot, positive-patient change, worst-patient/tail summaries and calibration curves | Reads **`data/eval_predictions.csv`**, independently of the monitoring file. Without it generates 300 simulated episodes and explicitly warns constructed blending gains are not experimental results. |
 
-**A separate Model Evaluation page is not present at this SHA.** The tracked
-`dashboard/pages/` directory contains only `1_Adaptive_Decisions.py`. No calibration,
-ROC/PR, patient-cluster paired comparison or CVaR page was found. The baseline
-training CLI prints row-level AUROC/AUPRC and threshold summaries; those prints are
-not a dashboard page or results for the activated LogisticRegression bundle.
-Re-inspect the next pushed ref before claiming the teammate's new evaluation page
-is integrated. Do not rebuild it in React to compensate for an unpublished file.
+Both monitoring loaders and the evaluation loader now include the CSV modification
+time in their cache key. Missing files select simulated mode independently: an
+existing monitoring CSV does not make the evaluation page real, or vice versa.
 
-## CSV and data dependencies
+### `data/predictions.csv`
 
-Both pages read a fixed repository-relative **`data/predictions.csv`**, cached by
-Streamlit. There is no CSV path variable or upload control in the inspected code.
-Changes to the file require cache invalidation/app restart for a predictable demo.
+One row per episode/hour, sorted by the application:
 
-| Consumer | Required columns | Optional columns/behavior |
-|---|---|---|
-| Main dashboard | `patient_id`, `hour`, `risk`, `HR`, `MAP`, `Resp`, `Temp` | `static_probability`, `temporal_probability` add overlays. `SepsisLabel` or `onset_hour` enable retrospective detection/lead-time displays. Without labels, only threshold crossing is described. |
-| Adaptive Decisions | `patient_id`, `hour`, `risk`, `static_probability`, `temporal_probability`, `temporal_weight`, `status` | `entropy_static` is used if present; otherwise binary entropy is calculated from static probabilities. Final entropy is calculated locally. Missing temporal probabilities remain gaps. |
-| `dashboard/convert_trajectory.py` | Legacy JSON wrapper containing `request.observations` and `response.predictions`; predictions include `icu_hour`, `final_probability` and controller fields | Optional labels CSV needs `hour`, `SepsisLabel` for the same episode. Raw vital nulls remain empty; no imputation. Default output is `data/predictions.csv`; `--append` reads and combines an existing CSV. |
-| `dashboard/train_baseline.py` | A separate CSV/PSV/Parquet patient-hour dataset with identifiers and `SepsisLabel`; available PhysioNet measurements | Trains a separate LightGBM baseline and writes held-out predictions plus forward-filled plotting vitals. It does not supply the static/temporal/weight/status columns required by Adaptive Decisions. Do not run it for this integration or replace the verified model. |
+- Main page requires `patient_id`, `hour`, `risk`, `HR`, `MAP`, `Resp`, `Temp`.
+- Optional `static_probability` and `temporal_probability` add expert overlays.
+- Adaptive Decisions additionally requires `static_probability`,
+  `temporal_probability`, `temporal_weight`, `status` alongside patient/hour/risk.
+- Optional `entropy_static` is consumed; otherwise entropy is computed locally.
+- Optional `SepsisLabel` or `onset_hour` enables retrospective detection/lead-time
+  displays. Without label columns, those metrics/onset interpretation are unavailable.
+  Unknown/partial labels must not be treated as verified negative outcomes.
 
-Important compatibility gaps:
+### `data/eval_predictions.csv`
 
-- The converter does **not** accept canonical `sepsis-decision-summary.v1` records
-  or the top-level sanitized retrospective export. Passing `retrospective-01.json`
-  to it would fail: that file has no `request` or `response.predictions` wrapper.
-  Redacted raw vitals cannot be reconstructed to fill its required chart columns.
-- A reviewed adapter/export is a future prerequisite if both applications must
-  consume the same canonical decision-summary dataset. No such adapter is added
-  here, and no physiological values are fabricated for compatibility.
-- The main dashboard labels any existing CSV “Real predictions” based on file
-  presence, without model/dataset provenance validation. Do not convert a synthetic
-  episode to that path and then present the source caption as proof it is real.
-  For an unmodified safe layout demo, leave the CSV absent so both pages visibly
-  show their simulated mode.
-- Label presence is checked by column existence. A column of missing/partial labels
-  is not evidence of complete outcomes; do not use it to infer cohort performance.
-- The `first positive shifted label + 6` event marker is the page's retrospective
-  heuristic, not independently verified real-world onset. It must not become a
-  React inference input, future forecast or treatment trigger.
-- The converter merges labels on hour and does not enforce duplicate/key/episode
-  alignment; the output can overwrite an existing file unless append is requested.
-  Do not run it against the current private export or overwrite existing results.
-- The branch's `.gitignore` covers raw/processed directories and `results/`, but
-  does not specifically exclude `data/predictions.csv` or arbitrary labels CSVs.
-  Keep any real/derived episode CSV private and ignored through an approved setup.
-  This audit does not change that branch's files.
+A **separate**, held-out, patient-disjoint evaluation export is needed for actual
+model comparisons. The intended contract has `patient_id`, `hour`, binary
+`SepsisLabel` and at least two available policy probability columns:
 
-## Runtime prerequisites
+| Policy | Accepted column(s), in preference order |
+|---|---|
+| Static | `static_probability` |
+| Temporal | `temporal_probability` |
+| Hard-switching | `hard_switch_probability` (optional policy) |
+| Continuous | `continuous_probability`, otherwise `risk` |
 
-The source imports `streamlit`, `plotly`, `pandas` and `numpy`. Streamlit/Plotly are
-not declared in the inspected `pyproject.toml` or `uv.lock`, and no dashboard-specific
-requirements file is committed. LightGBM is also undeclared and absent, but it is
-needed only for the separate training script—not to display simulated dashboards.
-The training script's docstring also names a different entry-point path than its
-actual `dashboard/train_baseline.py` location; do not use that as a launch recipe.
+The loader checks patient ID and label column presence; `hour` is documented but
+not used for key validation. Missing policies are labeled unavailable. Rows missing
+any selected policy/label are dropped jointly, and the dropped count is displayed.
+The page itself does not establish patient split provenance, unique patient-hour
+keys, label completeness, or valid finite probabilities. Validate those properties
+upstream before presenting a real CSV. Do not generate labels in live inference.
 
-The teammate should supply their tested/pinned Streamlit and Plotly environment
-and a startup check before claiming reproducibility from a clean checkout. Do not
-install optional dashboard packages into or retrain within the checksum-sensitive
-verified model environment. Use an independent explorer environment/checkout.
+The unchanged evaluation definitions include:
 
-## Linking from React
+- Bernoulli log loss with page-specific clipping `1e-12`; Brier and an approximate,
+  order-sensitive-tie average-precision calculation (not a claim of exact registry
+  AUPRC parity). No AUROC or ECE output is implemented.
+- Patient-mean log loss averages within patient first. Percentile bootstrap
+  intervals resample patients; the minimum support is 20 patients. The slider ranges
+  from 200–4000 resamples, with a memory-based cap in the implementation.
+- Paired change is **candidate minus baseline**, so negative means lower loss. This
+  has the opposite sign of a reference-minus-candidate gain report.
+- “CVaR90” is the mean of the worst `ceil(0.1*N)` patient losses. It is the page's
+  finite-sample convention, not automatically the fractional-tail registry estimator.
+- Calibration uses equal-count probability bins. These are descriptive diagnostics,
+  not a fitted recalibration or proof of clinical reliability.
 
-The existing `VITE_STREAMLIT_URL` link is sufficient for either page and future
-Streamlit pages. It is ordinary top-level navigation to a separate tab, with
-`noopener noreferrer`, not an iframe or cross-origin API call. No backend, CORS or
-React chart changes are needed. Link the application's actual root URL and use its
-own sidebar; no unverified deep-link pathname is guessed.
+These definitions were inspected and exercised without editing them. Simulated
+calibration, bootstrap intervals and policy differences do not measure improvement
+of the activated trained model.
 
-Once the teammate has a running, locally reachable explorer, set only this key in
-the ignored `frontend/.env.local`, preserving the other API/model settings:
+## Existing converter limitations — no private-data conversion performed
 
-```dotenv
-VITE_STREAMLIT_URL=http://127.0.0.1:8501
+`dashboard/convert_trajectory.py` accepts the older
+`{request: RawTrajectoryRequest, response: {predictions: ...}}` wrapper. It does not
+accept canonical `records` or the sanitized `retrospective-01.json` DTO. It writes
+monitoring CSV only, not the evaluation CSV, and optional labels are merged on hour
+without enforcing identity/duplicate alignment. Its default output can overwrite
+an existing CSV. It was not run.
+
+The 37-hour sanitized export contains no raw vital values or labels; those cannot be
+reconstructed to populate either CSV contract. Keep that private export in its
+existing ignored location and use React's local importer. A single unlabeled episode
+is not a valid cohort calibration/bootstrap report. No adapter is added here.
+
+The main/Adaptive pages label any existing monitoring CSV “Real predictions” based
+on presence, not verified provenance. Do not place a synthetic CSV there and claim
+real inference from its caption. The launcher below requires **both CSVs absent**
+for this safe, explicitly simulated Explorer demo. The branch's ignore rules do not
+specifically protect these two CSV paths; do not add private data to this worktree.
+
+The separate `dashboard/train_baseline.py` trains LightGBM with different features
+and writes a different output contract. It is not needed for the Explorer and was
+not run. No model is trained, replaced or copied by this integration.
+
+## One-time isolated setup
+
+The teammate's branch does not declare Streamlit/Plotly in its pyproject/uv lock.
+This frontend supplies `explorer/requirements.in` and a complete hashed
+`explorer/requirements.lock`, installed **only in the Explorer's new .venv**.
+Validated direct versions: Python **3.12.13**, Streamlit **1.66.1**, Plotly **7.1.0**,
+NumPy **2.5.4**, pandas **3.1.0**. All 35 resolved packages are pinned with hashes.
+The verified model environment and repository uv lock are not changed. Windows
+package hashes are included, but runtime validation here was macOS only.
+
+From `/Users/olveraalec/code/projects/hackathon-aws-publish`, for a fresh setup:
+
+```bash
+git fetch --no-tags origin refs/heads/dashboard-demo:refs/remotes/origin/dashboard-demo
+git worktree add --detach ../hackathon-streamlit-demo c28e2ad51f2b9304f99637f6f720e41f2be92bdf
+uv venv --python 3.12.13 ../hackathon-streamlit-demo/.venv
+uv pip sync --python ../hackathon-streamlit-demo/.venv/bin/python \
+  --require-hashes frontend/explorer/requirements.lock
 ```
 
-That is a **proposed same-laptop URL**, not a verified running service. Use the actual
-URL if the teammate runs elsewhere. Restart Vite after changing it. On another
-computer, `127.0.0.1` refers to that computer, not the presenter's laptop; remote
-access/hosting requires its own approved setup. Never put credentials in a public
-Vite variable. Until the actual URL is known/reachable, React correctly displays
-“Explorer link not configured” rather than opening an invented service.
+**These setup steps were already completed locally.** Do not rerun `worktree add`
+against the existing directory or overwrite another checkout. The new worktree is
+clean/detached at c28e2ad. Neither dashboard CSV exists. The launcher verifies the
+pinned revision, requires that no CSV is present, uses the separate Python, binds
+only loopback port 8501, and disables usage-statistics collection. It never installs
+packages on startup or alters a model environment. Override `EXPLORER_WORKTREE` only
+when using another intentionally prepared separate checkout.
 
-## Reproducible demonstration sequence
+## Exact three-service launch commands
 
-1. **Backend owner terminal:** keep the already verified FastAPI process running on
-   `127.0.0.1:8003` with its unchanged model/configuration. Confirm `/health` is 200.
-   Do not move the bundle or alter its environment for the explorer.
-2. **React terminal, this worktree:** run `npm --prefix frontend run dev`. Open the
-   loopback URL printed by Vite. The initial three-hour fixture is explicitly
-   synthetic, including its demonstration predictions.
-3. **Live model on synthetic inputs:** choose **Connect API / export → Run model on
-   synthetic observations**. Explain that the 24-hour inputs are synthetic and the
-   outputs are from the real activated model. Show the Network POST returning 200,
-   select hours, and inspect allocation, exact change terms, missingness and entropy.
-4. **Real retrospective outputs, local/private:** choose **Open private retrospective
-   outputs** and select the existing sanitized `retrospective-01.json` from the main
-   checkout's ignored results directory. Show the distinct retrospective banner,
-   37 decisions, previous/current outputs and exact decomposition. No file upload
-   occurs. Explain that raw vitals and log-odds vectors were redacted; do not restore,
-   publish, screen-capture or commit them. This is one retrospective episode, not a
-   cohort evaluation or clinical validation result.
-5. **Separate synthetic evaluation:** switch to Research perspective. The displayed
-   document-reported synthetic policy study is distinct from the imported episode
-   and the installed model. The current evaluation-summary API is 404; calibration
-   and real-cohort paired results remain unavailable.
-6. **Explorer owner terminal:** in a separate checkout with the teammate's tested
-   dashboard environment and approved data arrangement, run:
+Run each block in a separate persistent terminal. Keep already-running owner
+processes rather than starting duplicates on the same ports.
 
-   ```bash
-   python -m streamlit run dashboard/app.py --server.address 127.0.0.1 --server.port 8501
-   ```
+**Terminal 1 — existing verified FastAPI, unchanged configuration:**
 
-   For the no-CSV layout demo, both Streamlit pages disclose simulated data.
-   Verify `http://127.0.0.1:8501/_stcore/health`, then configure the actual URL in
-   React and restart Vite. Do not launch a new training run or copy the private
-   retrospective JSON into a static website/CSV directory for this step.
-7. **Research Explorer link:** open the separate Streamlit app. Highlight the
-   synchronized risk/vital views and the threshold trade-off as retrospective
-   exploration, then Adaptive Decisions' allocation/disagreement/entropy traces
-   and fallback shading. State whether the page uses simulated or approved loaded
-   data before discussing any number. Keep React as the primary product.
+```bash
+cd /Users/olveraalec/code/projects/hackathon-starter
+PYTHON_DOTENV_DISABLED=1 uv run --no-sync uvicorn healthcare_ai_lab.api.main:app \
+  --host 127.0.0.1 --port 8003 --no-access-log
+```
 
-Useful independent charts to highlight without rebuilding:
+Retain the owner's approved model configuration/environment. Do not install Explorer
+packages or copy model files here. `http://127.0.0.1:8003/health` should return 200.
 
-- Main page: synchronized final/static/temporal probability with HR/MAP/Resp/Temp;
-  exploratory threshold crossings. Label-dependent counts are not prospective
-  detection guarantees or validated treatment thresholds.
-- Adaptive page: four aligned probability/allocation/disagreement/entropy plots,
-  fallback shading and the user-controlled display tolerance. Synthetic allocation
-  patterns can exceed the configured backend's ordinary bounds; they illustrate
-  layout rather than reproduce the verified controller.
-- The promised Model Evaluation page should be highlighted only after its commit,
-  data contract and source/provenance labels have been inspected. It is not present
-  in the fetched WIP commit.
+**Terminal 2 — independent Research Explorer:**
 
-## Current integration status
+```bash
+cd /Users/olveraalec/code/projects/hackathon-aws-publish
+npm --prefix frontend run explorer
+```
 
-React retrospective import and real FastAPI/browser checks pass. The existing
-Streamlit link implementation needs no redesign. Remaining explorer prerequisites
-are the pushed evaluation page (if desired), tested dependency pins/environment,
-actual running URL, and a reviewed CSV/adapter/provenance arrangement if real data
-are used. Streamlit was source-inspected, **not runtime-tested**, in this milestone.
-No branch was merged, no backend/model/SQL/AWS change was made, and no Streamlit
-training or conversion job was executed.
+This launches `../hackathon-streamlit-demo/.venv/bin/python -m streamlit run
+ dashboard/app.py` in that detached worktree, with the explicit loopback/headless/
+usage-statistics options in `explorer/start.mjs`. URL: **http://127.0.0.1:8501**.
+Stop the owner terminal with Ctrl+C when finished.
+
+**Terminal 3 — primary React application:**
+
+```bash
+cd /Users/olveraalec/code/projects/hackathon-aws-publish
+VITE_STREAMLIT_URL=http://127.0.0.1:8501 npm --prefix frontend run dev -- \
+  --host 127.0.0.1 --port 5173 --strictPort
+```
+
+URL: **http://127.0.0.1:5173**. The local ignored `.env.local` was also updated only
+at `VITE_STREAMLIT_URL`; the API/model settings were preserved. Restart an older
+Vite process to apply environment changes. The existing `/api` proxy targets 8003.
+
+The URL is a **configurable, same-laptop demo setting**, not a hardcoded public
+deployment address. Production/default `.env.example` stays blank with a local-demo
+comment. A remote deployment must set its own actual URL. The anchor opens a new
+application/tab with `noopener noreferrer`; there is no iframe, data handoff or
+backend CORS change. Another person's localhost is not the presenter's laptop.
+
+## Demonstration order and labels
+
+1. React's default three-observation fixture: identify synthetic observations and
+   fixed demonstration predictions before showing the interface.
+2. **Connect API / export → Run model on synthetic observations:** actual trained
+   model inference via HTTP on synthetic inputs. Show source banner, selected hour,
+   allocation and exact attribution; do not describe this as patient validation.
+3. **Open private retrospective outputs:** select the existing sanitized 37-hour
+   export locally. Its distinct retrospective banner, unavailable redacted values
+   and imported provenance remain intact. No upload, browser storage or automatic
+   substitution with fixtures occurs.
+4. **Research Explorer:** open the separate Streamlit app using the configured link.
+   Patient Monitoring and Adaptive Decisions run their disclosed simulations.
+   Open Model Evaluation from the sidebar; explicitly point to its warning that
+   constructed gains are **not experimental results**. Highlight synchronized traces,
+   fallback shading, calibration and paired-patient boxplots as research tooling.
+5. React's separate document-reported synthetic study and Streamlit's generated
+   synthetic evaluation are **different studies**; neither evaluates the 37-hour
+   episode or demonstrates improvement of the trained model. React's evaluation
+   API is still 404, so model-specific cohort metrics stay unavailable.
+
+## Verification and remaining boundaries
+
+Executed:
+
+- All three unchanged source pages via Streamlit `AppTest`: expected titles/charts,
+  simulated warnings and no runtime exceptions. Model Evaluation renders its two
+  dataframes, comparison plot and calibration plot.
+- Real Chrome navigation from React's configured link into a **separate Streamlit
+  tab**, then through all three sidebar pages: health 200, synthetic notices,
+  Model Evaluation's non-results warning, no runtime exception or React iframe.
+- Frontend build/typecheck/lint/unit/browser regressions; the real FastAPI and private
+  retrospective-import regression remain separate checks, with no data sent to the
+  Explorer. Full check counts are in the final milestone report.
+
+No dashboard source, backend contract, model artifact, mathematical definition,
+evaluation result, database schema or existing React design was edited. The original
+37-hour importer and live client are preserved. The Explorer runs independently;
+closing it does not replace or interrupt React/FastAPI.
+
+There is **no blocker for the local simulated Explorer demonstration**. Real CSV
+use still needs reviewed held-out data/provenance and contract validation; public
+hosting/authentication is outside this local demo. No clinical validation or adaptive
+superiority is claimed. No branch was merged or pushed automatically.

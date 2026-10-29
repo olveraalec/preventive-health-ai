@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { syntheticDecisionEpisode, syntheticEvaluation } from '../src/data/fixtures.ts'
+import { verifyExplorer } from './explorer-browser.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const chrome = process.env.CHROME_BIN || (process.platform === 'darwin'
@@ -94,6 +95,7 @@ try {
   assert.ok(await evaluate('document.body.textContent.includes("Synthetic example")'))
   assert.ok(await evaluate('document.body.textContent.includes("Not results from the PhysioNet cohort")'))
   assert.equal(await evaluate('document.querySelectorAll("iframe").length'), 0)
+  if (process.env.VERIFY_EXPLORER === '1') await verifyExplorer({ send, evaluate, port, until })
   await evaluate('document.querySelectorAll(".hour")[0].click()')
   await until(() => evaluate('document.querySelector(".prediction-comparison").textContent.includes("No previous")'), 'first observation selection')
   await evaluate('document.querySelectorAll(".hour")[2].click()')
