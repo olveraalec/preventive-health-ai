@@ -59,31 +59,31 @@ The Python project lives under `src/healthcare_ai_lab/`. Its components include 
 
 ### Two predictive experts and bounded allocation
 
-For patient episode \(i\) at observation hour \(t\):
+For patient episode $i$ at observation hour $t$:
 
-- \(p_{S,it}\): prediction from the **static** logistic model;
-- \(p_{T,it}\): prediction from the **temporal** logistic model;
-- \(q_{it}\): bounded allocation to the temporal expert.
+- $p_{S,it}$: prediction from the **static** logistic model;
+- $p_{T,it}$: prediction from the **temporal** logistic model;
+- $q_{it}$: bounded allocation to the temporal expert.
 
 The displayed blended score is
 
-\[
+$$
 p_{it} = (1-q_{it})p_{S,it}+q_{it}p_{T,it}
        = p_{S,it}+q_{it}(p_{T,it}-p_{S,it}).
-\]
+$$
 
 The controller may **abstain from changing the allocation** and use a preselected static/constant fallback when its reliability evidence is insufficient. Experimental covariance-based and anticipatory controllers are evaluated separately; they must not be conflated with the policy used for a particular live inference record. See [Research methodology](docs/RESEARCH_METHODOLOGY.md).
 
 ### Exact decision-change attribution
 
-Writing \(d_t=p_{T,t}-p_{S,t}\), the change between successive observations decomposes exactly as
+Writing $d_t=p_{T,t}-p_{S,t}$, the change between successive observations decomposes exactly as
 
-\[
+$$
 \underbrace{p_t-p_{t-1}}_{\text{total change}} =
 \underbrace{(p_{S,t}-p_{S,t-1})}_{\text{static movement}}+
 \underbrace{q_{t-1}(d_t-d_{t-1})}_{\text{expert-disagreement movement}}+
 \underbrace{(q_t-q_{t-1})d_t}_{\text{controller reallocation}}.
-\]
+$$
 
 Unlike generic feature-importance labels, this is an **algebraic accounting identity** for the prediction update. It does **not** claim that a measurement *caused* a clinical outcome. Optional logistic log-odds contributions are similarly model explanations, not causal effects.
 
@@ -93,9 +93,9 @@ Predictive Bernoulli entropy, expert disagreement, observation freshness, fallba
 
 The principal probabilistic classification loss is Bernoulli log loss:
 
-\[
+$$
 \ell(y,p)=-y\log(p)-(1-y)\log(1-p).
-\]
+$$
 
 Patient-level evaluation first aggregates hourly loss **within each patient**, then compares policies over patients. The evaluation framework includes log loss, Brier score, discrimination (AUROC and average precision), calibration/error bins, prevalence, patient-level paired deltas and bootstrap intervals, tail/CVaR summaries, and controller behavior/abstention. A separate general-purpose metric registry also retains regression metrics (RMSE, MAE, bias, Gaussian NLL, CRPS and interval coverage). Not every available metric is displayed or meaningful for every task.
 
