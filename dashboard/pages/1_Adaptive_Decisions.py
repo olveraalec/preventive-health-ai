@@ -42,7 +42,7 @@ def simulate() -> pd.DataFrame:
 
 
 @st.cache_data
-def load():
+def load(stamp: float = 0):
     if PRED_PATH.exists():
         df, src = pd.read_csv(PRED_PATH), f"Real predictions ({PRED_PATH.name})"
         missing = [c for c in REQUIRED if c not in df.columns]
@@ -58,7 +58,7 @@ def entropy(p: pd.Series) -> pd.Series:
     return -(p * np.log(p) + (1 - p) * np.log(1 - p))
 
 
-df, src, missing = load()
+df, src, missing = load(PRED_PATH.stat().st_mtime if PRED_PATH.exists() else 0)
 st.title("Adaptive AI decisions")
 st.caption(f"Data: {src}. Research use only; not for clinical use.")
 if missing:

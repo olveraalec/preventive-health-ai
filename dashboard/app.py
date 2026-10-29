@@ -62,7 +62,7 @@ def simulate(n_patients: int = 40, seed: int = 7) -> pd.DataFrame:
 
 
 @st.cache_data
-def load_data():
+def load_data(stamp: float = 0):
     if PRED_PATH.exists():
         df, source = pd.read_csv(PRED_PATH), f"Real predictions ({PRED_PATH.name})"
     else:
@@ -92,7 +92,7 @@ def patient_table(df: pd.DataFrame, thr: float) -> pd.DataFrame:
 
 
 # ----------------------------------------------------------------- UI
-df, source, has_labels = load_data()
+df, source, has_labels = load_data(PRED_PATH.stat().st_mtime if PRED_PATH.exists() else 0)
 
 st.title("ICU Retrospective Research Dashboard")
 st.caption(f"Data: {source}. Research use only; not for clinical use.")
